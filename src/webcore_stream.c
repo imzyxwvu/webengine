@@ -27,7 +27,6 @@ typedef struct {
 #ifndef NO_SSL
     SSL *ssl;
     BIO *rxbio, *txbio;
-    int tls_ready;
 #endif
 } webcore_stream_t;
 
@@ -616,43 +615,6 @@ static int l_stream_getpeername(lua_State *L)
     return 2;
 }
 
-#ifdef __linux__
-
-#include <linux/netfilter_ipv4.h>
-
-/*
- * libuv doesn't provide this and this is used for my own purpose.
- * This is useful for transparent proxying...
- */
-
-static int l_stream_getorigdst(lua_State *L)
-{
-    webcore_stream_t *self = luaL_checkudata(L, 1, LXUV_MT_STREAM);
-    int addrlen, r;
-    struct sockaddr_in6 address;
-    uv_os_fd_t fd;
-    if(NULL == self->handle)
-        return luaL_error(L, "attempt to operate on a closed stream");
-    if(UV_TCP != self->handle->type)
-        return luaL_error(L, "stream is not a TCP stream");
-    r = uv_fileno((uv_handle_t *)self->handle, &fd);
-    if(r < 0) {
-        lua_pushnil(L);
-        lua_pushstring(L, uv_strerror(r));
-        return 2;
-    }
-    addrlen = sizeof(address);
-    if (getsockopt(fd, SOL_IP, SO_ORIGINAL_DST,
-        (struct sockaddr *)&address, &addrlen) != 0) {
-        lua_pushnil(L);
-        return 1;
-    }
-    luaxuv_pushaddr(L, (void*)&address, addrlen);
-    return 2;
-}
-
-#endif
-
 static int l_stream_set_nodelay(lua_State *L)
 {
     webcore_stream_t *self = luaL_checkudata(L, 1, LXUV_MT_STREAM);
@@ -806,9 +768,6 @@ void webcore_init_stream(uv_stream_t* stream, int cbref)
 static luaL_Reg lreg_stream_methods[] = {
     { "getsockname", l_stream_getsockname },
     { "getpeername", l_stream_getpeername },
-#ifdef __linux__
-    { "getorigdst", l_stream_getorigdst },
-#endif
     { "gettlsver", l_stream_gettlsver },
 #ifndef NO_SSL
     { "getpeerveri", l_stream_getpeerveri },

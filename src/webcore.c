@@ -606,8 +606,6 @@ static int l_stop(lua_State *L)
     return 0;
 }
 
-/* Ultragear Request Parser */
-
 #define CURRENT_ISUPPER (chunk[i] >= 'A' && chunk[i] <= 'Z')
 #define CURRENT_ISLOWER (chunk[i] >= 'a' && chunk[i] <= 'z')
 #define CURRENT_ISNUMBER (chunk[i] >= '0' && chunk[i] <= '9')
