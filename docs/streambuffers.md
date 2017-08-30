@@ -10,11 +10,11 @@ Allocate an empty stream buffer. The reference count is set to 1. If memory allo
 
 Remove first nb bytes in the buffer.
 
-## streambuffer_t *stb_retain(streambuffer_t *sb);
+## streambuffer_t *stb_retain(streambuffer_t *sb)
 
 Increase the reference count and return the StreamBuffer itself.
 
-## void stb_unref(streambuffer_t *sb);
+## void stb_unref(streambuffer_t *sb)
 
 Decrease the reference count. If the reference count reaches 0, the StreamBuffer is freed.
 

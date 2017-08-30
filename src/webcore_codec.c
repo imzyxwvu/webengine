@@ -166,61 +166,61 @@ static void md5 (const char *message, long len, char *output) {
 }
 
 typedef struct {
-	unsigned char S[256];
-	int i, j;
+    unsigned char S[256];
+    int i, j;
 } rc4_state;
 
 static int lrc4_proceed(lua_State *L)
 {
-	rc4_state *rc4;
-	size_t len;
-	const unsigned char *input = (const unsigned char *)luaL_checklstring(L, 1, &len);
-	unsigned char *output;
-	int i, j;
-	luaL_checktype(L, lua_upvalueindex(1), LUA_TUSERDATA);
-	if(len == 0) {
-		lua_pushliteral(L, "");
-		return 1;
-	}
-	rc4 = lua_touserdata(L, lua_upvalueindex(1));
-	output = malloc(len);
-	if(NULL == output)
-		return luaL_error(L, "can't allocate a buffer of %d bytes", len);
-	for(i = 0; i < len; i++) {
-		rc4->i = (rc4->i + 1) % 256; rc4->j = (rc4->j + rc4->S[rc4->i]) % 256;
-		j = rc4->S[rc4->i]; rc4->S[rc4->i] = rc4->S[rc4->j]; rc4->S[rc4->j] = j;
-		output[i] = input[i] ^ rc4->S[(rc4->S[rc4->i] + rc4->S[rc4->j]) % 256];
-	}
-	lua_pushlstring(L, output, len);
-	free(output);
-	return 1;
+    rc4_state *rc4;
+    size_t len;
+    const unsigned char *input = (const unsigned char *)luaL_checklstring(L, 1, &len);
+    unsigned char *output;
+    int i, j;
+    luaL_checktype(L, lua_upvalueindex(1), LUA_TUSERDATA);
+    if(len == 0) {
+        lua_pushliteral(L, "");
+        return 1;
+    }
+    rc4 = lua_touserdata(L, lua_upvalueindex(1));
+    output = malloc(len);
+    if(NULL == output)
+        return luaL_error(L, "can't allocate a buffer of %d bytes", len);
+    for(i = 0; i < len; i++) {
+        rc4->i = (rc4->i + 1) % 256; rc4->j = (rc4->j + rc4->S[rc4->i]) % 256;
+        j = rc4->S[rc4->i]; rc4->S[rc4->i] = rc4->S[rc4->j]; rc4->S[rc4->j] = j;
+        output[i] = input[i] ^ rc4->S[(rc4->S[rc4->i] + rc4->S[rc4->j]) % 256];
+    }
+    lua_pushlstring(L, output, len);
+    free(output);
+    return 1;
 }
 
 static int l_newrc4(lua_State *L)
 {
-	rc4_state *rc4;
-	int init_i = luaL_optinteger(L, 2, 0);
-	if(lua_type(L, 1) == LUA_TTABLE) {
-		int i;
-		if(lua_objlen(L, 1) != 256)
-			return luaL_error(L, "length of the initial S must be 256");
-		rc4 = (rc4_state *) lua_newuserdata(L, sizeof(rc4_state));
-		for(i = 0; i < 256; i++) {
-			lua_rawgeti(L, 1, i + 1);
-			rc4->S[i] = lua_tointeger(L, -1);
-			lua_pop(L, 1);
-		}
-	} else {
-		size_t len;
-		const char *S = luaL_checklstring(L, 1, &len);
-		if(len != 256)
-			return luaL_error(L, "length of the initial S must be 256");
-		rc4 = (rc4_state *) lua_newuserdata(L, sizeof(rc4_state));
-		memcpy(rc4->S, S, 256);
-	}
-	rc4->i = init_i; rc4->j = 0;
-	lua_pushcclosure(L, lrc4_proceed, 1);
-	return 1;
+    rc4_state *rc4;
+    int init_i = luaL_optinteger(L, 2, 0);
+    if(lua_type(L, 1) == LUA_TTABLE) {
+        int i;
+        if(lua_objlen(L, 1) != 256)
+            return luaL_error(L, "length of the initial S must be 256");
+        rc4 = (rc4_state *) lua_newuserdata(L, sizeof(rc4_state));
+        for(i = 0; i < 256; i++) {
+            lua_rawgeti(L, 1, i + 1);
+            rc4->S[i] = lua_tointeger(L, -1);
+            lua_pop(L, 1);
+        }
+    } else {
+        size_t len;
+        const char *S = luaL_checklstring(L, 1, &len);
+        if(len != 256)
+            return luaL_error(L, "length of the initial S must be 256");
+        rc4 = (rc4_state *) lua_newuserdata(L, sizeof(rc4_state));
+        memcpy(rc4->S, S, 256);
+    }
+    rc4->i = init_i; rc4->j = 0;
+    lua_pushcclosure(L, lrc4_proceed, 1);
+    return 1;
 }
 
 static const char b64code[]=
@@ -239,7 +239,7 @@ static void b64encode(luaL_Buffer *b, unsigned int c1, unsigned int c2, unsigned
     luaL_addlstring(b,s,4);
 }
 
-static int l_b64encode(lua_State *L)		/** encode(s) */
+static int l_b64encode(lua_State *L)        /** encode(s) */
 {
     size_t l;
     const unsigned char *s = (const unsigned char*)luaL_checklstring(L,1,&l);
@@ -270,7 +270,7 @@ static void b64decode(luaL_Buffer *b, int c1, int c2, int c3, int c4, int n)
     luaL_addlstring(b,s,n);
 }
 
-static int l_b64decode(lua_State *L)		/** decode(s) */
+static int l_b64decode(lua_State *L)        /** decode(s) */
 {
     size_t l;
     const char *s=luaL_checklstring(L,1,&l);
@@ -294,7 +294,7 @@ static int l_b64decode(lua_State *L)		/** decode(s) */
             case '=':
                 switch (n)
                 {
-                    case 1: b64decode(&b,t[0],0,0,0,1);	break;
+                    case 1: b64decode(&b,t[0],0,0,0,1);    break;
                     case 2: b64decode(&b,t[0],t[1],0,0,2); break;
                     case 3: b64decode(&b,t[0],t[1],t[2],0,3); break;
                 }
@@ -334,37 +334,37 @@ static void tea_decrypt (uint32_t* v, uint32_t* k) {
 }
 
 static int l_teaenc(lua_State *L) {
-	size_t keylen;
-	const char *teakey = luaL_checklstring(L, 2, &keylen);
-	char crypt_buf[8];
-	luaL_checktype(L, 1, LUA_TSTRING);
-	if(lua_strlen(L, 1) == 8) {
-		const char *input = lua_tostring(L, 1);
-		memcpy(crypt_buf, input, 8);
-	} else
-		return luaL_error(L, "data must be 64bit long");
-	if(keylen != 16)
-		return luaL_error(L, "key must be 128bit long");
-	tea_encrypt((uint32_t *)crypt_buf, (uint32_t *)teakey);
-	lua_pushlstring(L, crypt_buf, 8);
-	return 1;
+    size_t keylen;
+    const char *teakey = luaL_checklstring(L, 2, &keylen);
+    char crypt_buf[8];
+    luaL_checktype(L, 1, LUA_TSTRING);
+    if(lua_strlen(L, 1) == 8) {
+        const char *input = lua_tostring(L, 1);
+        memcpy(crypt_buf, input, 8);
+    } else
+        return luaL_error(L, "data must be 64bit long");
+    if(keylen != 16)
+        return luaL_error(L, "key must be 128bit long");
+    tea_encrypt((uint32_t *)crypt_buf, (uint32_t *)teakey);
+    lua_pushlstring(L, crypt_buf, 8);
+    return 1;
 }
 
 static int l_teadec(lua_State *L) {
-	size_t keylen;
-	const char *teakey = luaL_checklstring(L, 2, &keylen);
-	char crypt_buf[8];
-	luaL_checktype(L, 1, LUA_TSTRING);
-	if(lua_strlen(L, 1) == 8) {
-		const char *input = lua_tostring(L, 1);
-		memcpy(crypt_buf, input, 8);
-	} else
-		return luaL_error(L, "data must be 64bit long");
-	if(keylen != 16)
-		return luaL_error(L, "key must be 128bit long");
-	tea_decrypt((uint32_t *)crypt_buf, (uint32_t *)teakey);
-	lua_pushlstring(L, crypt_buf, 8);
-	return 1;
+    size_t keylen;
+    const char *teakey = luaL_checklstring(L, 2, &keylen);
+    char crypt_buf[8];
+    luaL_checktype(L, 1, LUA_TSTRING);
+    if(lua_strlen(L, 1) == 8) {
+        const char *input = lua_tostring(L, 1);
+        memcpy(crypt_buf, input, 8);
+    } else
+        return luaL_error(L, "data must be 64bit long");
+    if(keylen != 16)
+        return luaL_error(L, "key must be 128bit long");
+    tea_decrypt((uint32_t *)crypt_buf, (uint32_t *)teakey);
+    lua_pushlstring(L, crypt_buf, 8);
+    return 1;
 }
 
 #ifndef NO_SSL
@@ -395,14 +395,14 @@ static int l_md5(lua_State *L) {
 }
 
 luaL_Reg lreg_codec[] = {
-	{ "new_rc4", l_newrc4 },
-	{ "teaenc", l_teaenc },
-	{ "teadec", l_teadec },
-	{ "b64encode", l_b64encode },
-	{ "b64decode", l_b64decode },
+    { "new_rc4", l_newrc4 },
+    { "teaenc", l_teaenc },
+    { "teadec", l_teadec },
+    { "b64encode", l_b64encode },
+    { "b64decode", l_b64decode },
 #ifndef NO_SSL
     { "sha1", l_sha1 },
 #endif
     { "md5", l_md5 },
-	{ NULL, NULL }
+    { NULL, NULL }
 };

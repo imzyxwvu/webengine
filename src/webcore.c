@@ -16,9 +16,9 @@
 lua_State *L_Main = NULL;
 
 typedef struct {
-	uv_handle_t *data;
-	const char *tname;
-	int cbref, cbself;
+    uv_handle_t *data;
+    const char *tname;
+    int cbref, cbself;
 } luaxuv_handle;
 
 #define LXUV_MT_HANDLE "WebCore UV Handle"
@@ -110,8 +110,8 @@ static int l_stb_pull(lua_State *L) {
 }
 
 static luaL_Reg lreg_stb_methods[] = {
-	{ "pull", l_stb_pull },
-	{ NULL, NULL }
+    { "pull", l_stb_pull },
+    { NULL, NULL }
 };
 
 void luaxuv_pushstb(lua_State *L, streambuffer_t *sb)
@@ -119,25 +119,25 @@ void luaxuv_pushstb(lua_State *L, streambuffer_t *sb)
     streambuffer_ref_t *ref = lua_newuserdata(L, sizeof(streambuffer_ref_t));
     ref->sb = stb_retain(sb);
     ref->revision = sb->revision;
-	luaL_getmetatable(L, LXUV_MT_STBUF);
-	lua_setmetatable(L, -2);
+    luaL_getmetatable(L, LXUV_MT_STBUF);
+    lua_setmetatable(L, -2);
 }
 
 void luaxuv_pushaddr(lua_State* L, struct sockaddr_storage* address, int addrlen)
 {
-	char ip[INET6_ADDRSTRLEN];
-	int port = 0;
-	if (address->ss_family == AF_INET) {
-		struct sockaddr_in* addrin = (struct sockaddr_in*)address;
-		uv_inet_ntop(AF_INET, &(addrin->sin_addr), ip, addrlen);
-		port = ntohs(addrin->sin_port);
-	} else if (address->ss_family == AF_INET6) {
-		struct sockaddr_in6* addrin6 = (struct sockaddr_in6*)address;
-		uv_inet_ntop(AF_INET6, &(addrin6->sin6_addr), ip, addrlen);
-		port = ntohs(addrin6->sin6_port);
-	}
-	lua_pushstring(L, ip);
-	lua_pushinteger(L, port);
+    char ip[INET6_ADDRSTRLEN];
+    int port = 0;
+    if (address->ss_family == AF_INET) {
+        struct sockaddr_in* addrin = (struct sockaddr_in*)address;
+        uv_inet_ntop(AF_INET, &(addrin->sin_addr), ip, addrlen);
+        port = ntohs(addrin->sin_port);
+    } else if (address->ss_family == AF_INET6) {
+        struct sockaddr_in6* addrin6 = (struct sockaddr_in6*)address;
+        uv_inet_ntop(AF_INET6, &(addrin6->sin6_addr), ip, addrlen);
+        port = ntohs(addrin6->sin6_port);
+    }
+    lua_pushstring(L, ip);
+    lua_pushinteger(L, port);
 }
 
 int l_tcp_connect(lua_State *L);
@@ -145,132 +145,132 @@ int l_pipe_connect(lua_State *L);
 
 static luaxuv_handle* luaxuv_newuvobj(lua_State *L, uv_handle_t *handle, const char *tn)
 {
-	luaxuv_handle *obj = lua_newuserdata(L, sizeof(luaxuv_handle));
-	register int i;
-	obj->data = handle;
-	obj->tname = tn;
-	obj->cbref = obj->cbself = LUA_REFNIL;
-	luaL_getmetatable(L, LXUV_MT_HANDLE);
-	lua_setmetatable(L, -2);
-	handle->data = obj;
-	return obj;
+    luaxuv_handle *obj = lua_newuserdata(L, sizeof(luaxuv_handle));
+    register int i;
+    obj->data = handle;
+    obj->tname = tn;
+    obj->cbref = obj->cbself = LUA_REFNIL;
+    luaL_getmetatable(L, LXUV_MT_HANDLE);
+    lua_setmetatable(L, -2);
+    handle->data = obj;
+    return obj;
 }
 
 static int luaxuv_close(lua_State *L)
 {
-	luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
-	if(obj->data) {
-		switch(obj->data->type) {
-		case UV_TIMER:
-			uv_timer_stop((uv_timer_t *)obj->data);
-			break;
-		case UV_POLL:
-			uv_poll_stop((uv_poll_t *)obj->data);
-			break;
-		case UV_SIGNAL:
-			uv_signal_stop((uv_signal_t *)obj->data);
-			break;
-		}
-		uv_close(obj->data, (uv_close_cb)free);
-		obj->data = NULL;
+    luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
+    if(obj->data) {
+        switch(obj->data->type) {
+        case UV_TIMER:
+            uv_timer_stop((uv_timer_t *)obj->data);
+            break;
+        case UV_POLL:
+            uv_poll_stop((uv_poll_t *)obj->data);
+            break;
+        case UV_SIGNAL:
+            uv_signal_stop((uv_signal_t *)obj->data);
+            break;
+        }
+        uv_close(obj->data, (uv_close_cb)free);
+        obj->data = NULL;
         LXUV_RELEASE(L, obj->cbref);
         LXUV_RELEASE(L, obj->cbself);
-	}
-	return 0;
+    }
+    return 0;
 }
 
 static int luaxuv_handle_tostring(lua_State *L)
 {
-	luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
-	lua_pushstring(L, obj->tname);
-	return 1;
+    luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
+    lua_pushstring(L, obj->tname);
+    return 1;
 }
 
 static int luaxuv_handle_len(lua_State *L) // This returns if the handle is closed
 {
-	luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
-	lua_pushboolean(L, obj->data ? 1 : 0);
-	return 1;
+    luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
+    lua_pushboolean(L, obj->data ? 1 : 0);
+    return 1;
 }
 
 static luaL_Reg lreg_handle[] = {
-	{ "__len", luaxuv_handle_len },
-	{ "__gc", luaxuv_close },
-	{ "__tostring", luaxuv_handle_tostring },
-	{ NULL, NULL }
+    { "__len", luaxuv_handle_len },
+    { "__gc", luaxuv_close },
+    { "__tostring", luaxuv_handle_tostring },
+    { NULL, NULL }
 };
 
 #define luaxuv_CHECK_CLOSED(obj) \
-	if(!obj->data) luaL_error(L, "using a closed %s", obj->tname);
+    if(!obj->data) luaL_error(L, "using a closed %s", obj->tname);
 
 static int luaxuv_udp_new(lua_State *L)
 {
-	uv_udp_t *handle = malloc(sizeof(uv_udp_t));
-	register int r = uv_udp_init(uv_default_loop(), handle);
-	if(r < 0) {
-		free(handle);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	luaxuv_newuvobj(L, (uv_handle_t *)handle, "UDP");
-	return 1;
+    uv_udp_t *handle = malloc(sizeof(uv_udp_t));
+    register int r = uv_udp_init(uv_default_loop(), handle);
+    if(r < 0) {
+        free(handle);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    luaxuv_newuvobj(L, (uv_handle_t *)handle, "UDP");
+    return 1;
 }
 
 static void udp_send_callback(uv_udp_send_t* req, int status)
 {
-	free(req);
+    free(req);
 }
 
 static int luaxuv_udp_send(lua_State *L)
 {
-	luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
-	uv_buf_t buf;
-	register int r;
-	uv_udp_send_t *req;
-	const char *ip;
-	int port;
-	struct sockaddr_storage addr;
-	
-	luaxuv_CHECK_CLOSED(obj);
-	if(UV_UDP != obj->data->type)
-		luaL_error(L, "expected a UDP handle, got %s", obj->tname);
-	buf.base = (char*)luaL_checklstring(L, 2, (size_t *)&buf.len);
-	ip = luaL_checkstring(L, 3);
-	port = luaL_checkint(L, 4);
-	if(uv_ip4_addr(ip, port, (struct sockaddr_in*)&addr) &&
-	   uv_ip6_addr(ip, port, (struct sockaddr_in6*)&addr))
-		return luaL_error(L, "invalid IP address or port");
-	req = malloc(sizeof(*req));
-	r = uv_udp_send(req, (uv_udp_t *)obj->data, &buf, 1,
-		(struct sockaddr *)&addr, udp_send_callback);
-	if(r < 0) {
-		free(req);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	return 0;
+    luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
+    uv_buf_t buf;
+    register int r;
+    uv_udp_send_t *req;
+    const char *ip;
+    int port;
+    struct sockaddr_storage addr;
+    
+    luaxuv_CHECK_CLOSED(obj);
+    if(UV_UDP != obj->data->type)
+        luaL_error(L, "expected a UDP handle, got %s", obj->tname);
+    buf.base = (char*)luaL_checklstring(L, 2, (size_t *)&buf.len);
+    ip = luaL_checkstring(L, 3);
+    port = luaL_checkint(L, 4);
+    if(uv_ip4_addr(ip, port, (struct sockaddr_in*)&addr) &&
+       uv_ip6_addr(ip, port, (struct sockaddr_in6*)&addr))
+        return luaL_error(L, "invalid IP address or port");
+    req = malloc(sizeof(*req));
+    r = uv_udp_send(req, (uv_udp_t *)obj->data, &buf, 1,
+        (struct sockaddr *)&addr, udp_send_callback);
+    if(r < 0) {
+        free(req);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    return 0;
 }
 
 static int luaxuv_udp_bind(lua_State *L)
 {
-	luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
-	const char *ip = luaL_checkstring(L, 2);
-	int port = luaL_checkint(L, 3);
-	register int r;
-	struct sockaddr_storage addr;
-	
-	luaxuv_CHECK_CLOSED(obj);
-	if(UV_UDP != obj->data->type)
-		luaL_error(L, "expected a UDP handle, got %s", obj->tname);
-	if(uv_ip4_addr(ip, port, (struct sockaddr_in*)&addr) &&
-	   uv_ip6_addr(ip, port, (struct sockaddr_in6*)&addr))
-		return luaL_error(L, "invalid IP address or port");
-	r = uv_udp_bind((uv_udp_t *)obj->data, (struct sockaddr *)&addr, 0);
-	if(r < 0) {
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	return 0;
+    luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
+    const char *ip = luaL_checkstring(L, 2);
+    int port = luaL_checkint(L, 3);
+    register int r;
+    struct sockaddr_storage addr;
+    
+    luaxuv_CHECK_CLOSED(obj);
+    if(UV_UDP != obj->data->type)
+        luaL_error(L, "expected a UDP handle, got %s", obj->tname);
+    if(uv_ip4_addr(ip, port, (struct sockaddr_in*)&addr) &&
+       uv_ip6_addr(ip, port, (struct sockaddr_in6*)&addr))
+        return luaL_error(L, "invalid IP address or port");
+    r = uv_udp_bind((uv_udp_t *)obj->data, (struct sockaddr *)&addr, 0);
+    if(r < 0) {
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    return 0;
 }
 
 static void luaxuv_on_simple_alloc(uv_handle_t* handle, size_t suggested_size, uv_buf_t* buf) {
@@ -279,331 +279,331 @@ static void luaxuv_on_simple_alloc(uv_handle_t* handle, size_t suggested_size, u
 }
 
 static void luaxuv_on_recv(uv_udp_t* handle, ssize_t nread, const uv_buf_t* buf, const struct sockaddr* addr, unsigned flags) {
-	luaxuv_handle *obj = handle->data;
-	if(nread == 0) { free(buf->base); return; }
-	lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbref);
-	if (nread >= 0) {
-		lua_pushlstring(L_Main, buf->base, nread);
-		free(buf->base);
-		luaxuv_pushaddr(L_Main, (struct sockaddr_storage*)addr, sizeof(*addr));
-		lua_call(L_Main, 3, 0);
-	} else {
-		free(buf->base);
-		lua_pushnil(L_Main);
-		lua_pushstring(L_Main, uv_err_name(nread));
-		lua_call(L_Main, 2, 0);
-	}
+    luaxuv_handle *obj = handle->data;
+    if(nread == 0) { free(buf->base); return; }
+    lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbref);
+    if (nread >= 0) {
+        lua_pushlstring(L_Main, buf->base, nread);
+        free(buf->base);
+        luaxuv_pushaddr(L_Main, (struct sockaddr_storage*)addr, sizeof(*addr));
+        lua_call(L_Main, 3, 0);
+    } else {
+        free(buf->base);
+        lua_pushnil(L_Main);
+        lua_pushstring(L_Main, uv_err_name(nread));
+        lua_call(L_Main, 2, 0);
+    }
 }
 
 static int luaxuv_udp_recv_start(lua_State *L)
 {
-	luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
-	register int r;
+    luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
+    register int r;
 
-	luaxuv_CHECK_CLOSED(obj);
-	if(UV_UDP != obj->data->type)
-		luaL_error(L, "expected a UDP handle, got %s", obj->tname);
-	luaL_checktype(L, 2, LUA_TFUNCTION);
-	if(obj->cbref == LUA_REFNIL) {
-		obj->cbref = LXUV_RETAIN(L, 2);
-		r = uv_udp_recv_start((uv_udp_t *)obj->data, luaxuv_on_simple_alloc, luaxuv_on_recv);
-		if(r < 0) {
+    luaxuv_CHECK_CLOSED(obj);
+    if(UV_UDP != obj->data->type)
+        luaL_error(L, "expected a UDP handle, got %s", obj->tname);
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+    if(obj->cbref == LUA_REFNIL) {
+        obj->cbref = LXUV_RETAIN(L, 2);
+        r = uv_udp_recv_start((uv_udp_t *)obj->data, luaxuv_on_simple_alloc, luaxuv_on_recv);
+        if(r < 0) {
             LXUV_RELEASE(L, obj->cbref);
-			lua_pushstring(L, uv_strerror(r));
-			return lua_error(L);
-		}
-	} else {
-		luaL_unref(L, LUA_REGISTRYINDEX, obj->cbref);
-		obj->cbref = LXUV_RETAIN(L, 2);
-	}
-	return 0;
+            lua_pushstring(L, uv_strerror(r));
+            return lua_error(L);
+        }
+    } else {
+        luaL_unref(L, LUA_REGISTRYINDEX, obj->cbref);
+        obj->cbref = LXUV_RETAIN(L, 2);
+    }
+    return 0;
 }
 
 static int luaxuv_udp_recv_stop(lua_State *L)
 {
-	luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
-	register int r;
-	
-	luaxuv_CHECK_CLOSED(obj);
-	if(UV_UDP != obj->data->type)
-		luaL_error(L, "expected a UDP handle, got %s", obj->tname);
-	if(obj->cbref == LUA_REFNIL) return 0;
-	LXUV_RELEASE(L, obj->cbref);
-	r = uv_udp_recv_stop((uv_udp_t *)obj->data);
-	if(r < 0) {
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	return 0;
+    luaxuv_handle *obj = luaL_checkudata(L, 1, LXUV_MT_HANDLE);
+    register int r;
+    
+    luaxuv_CHECK_CLOSED(obj);
+    if(UV_UDP != obj->data->type)
+        luaL_error(L, "expected a UDP handle, got %s", obj->tname);
+    if(obj->cbref == LUA_REFNIL) return 0;
+    LXUV_RELEASE(L, obj->cbref);
+    r = uv_udp_recv_stop((uv_udp_t *)obj->data);
+    if(r < 0) {
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    return 0;
 }
 
 void webcore_init_stream(uv_stream_t* stream, int cbref);
 
 static void luaxuv_on_conn(uv_stream_t* handle, int status)
 {
-	luaxuv_handle *self = handle->data;
-	if(status < 0) {
-		lua_rawgeti(L_Main, LUA_REGISTRYINDEX, self->cbref);
-		lua_pushnil(L_Main);
-		lua_pushstring(L_Main, uv_err_name(status));
-		lua_call(L_Main, 2, 0);
-	} else {
-		uv_tcp_t *stream = malloc(sizeof(uv_tcp_t));
-		int r;
-		if(!stream) return;
-		r = uv_tcp_init(uv_default_loop(), stream);
-		if(r < 0) {
-			free(stream);
-			return;
-		}
-		r = uv_accept(handle, (uv_stream_t *)stream);
-		if(r < 0) {
-			uv_close((uv_handle_t *)stream, (uv_close_cb)free);
-		} else {
-			webcore_init_stream((uv_stream_t *)stream, self->cbref);
-		}
-	}
+    luaxuv_handle *self = handle->data;
+    if(status < 0) {
+        lua_rawgeti(L_Main, LUA_REGISTRYINDEX, self->cbref);
+        lua_pushnil(L_Main);
+        lua_pushstring(L_Main, uv_err_name(status));
+        lua_call(L_Main, 2, 0);
+    } else {
+        uv_tcp_t *stream = malloc(sizeof(uv_tcp_t));
+        int r;
+        if(!stream) return;
+        r = uv_tcp_init(uv_default_loop(), stream);
+        if(r < 0) {
+            free(stream);
+            return;
+        }
+        r = uv_accept(handle, (uv_stream_t *)stream);
+        if(r < 0) {
+            uv_close((uv_handle_t *)stream, (uv_close_cb)free);
+        } else {
+            webcore_init_stream((uv_stream_t *)stream, self->cbref);
+        }
+    }
 }
 
 static int l_listen(lua_State *L)
 {
-	const char *ip = luaL_checkstring(L, 1);
-	int port = luaL_checkinteger(L, 2);
-	int backlog = luaL_checkinteger(L, 3);
-	struct sockaddr_storage addr;
-	uv_tcp_t *stream;
-	int r;
+    const char *ip = luaL_checkstring(L, 1);
+    int port = luaL_checkinteger(L, 2);
+    int backlog = luaL_checkinteger(L, 3);
+    struct sockaddr_storage addr;
+    uv_tcp_t *stream;
+    int r;
 
-	if(uv_ip4_addr(ip, port, (struct sockaddr_in*)&addr) &&
-	   uv_ip6_addr(ip, port, (struct sockaddr_in6*)&addr))
-		return luaL_error(L, "invalid IP address or port");
-	luaL_checktype(L, 4, LUA_TFUNCTION);
-	if(stream = malloc(sizeof(*stream))) {
-		r = uv_tcp_init(uv_default_loop(), stream);
-		if(r < 0) {
-			free(stream);
-			lua_pushstring(L, uv_strerror(r));
-			return lua_error(L);
-		}
-	} else return luaL_error(L, "can't allocate memory");
-	r = uv_tcp_bind((uv_tcp_t *)stream, (struct sockaddr *)&addr, 0);
-	if(r < 0) { 
-		uv_close((uv_handle_t *)stream, (uv_close_cb)free);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);	
-	} else {
-		luaxuv_handle *obj = luaxuv_newuvobj(L, (uv_handle_t *)stream, "TCP");
-		obj->cbref = LXUV_RETAIN(L, 4);
-		r = uv_listen((uv_stream_t *)stream, backlog, luaxuv_on_conn);
-		if(r < 0) { 
-			lua_pushcfunction(L, luaxuv_close);
-			lua_pushvalue(L, -2);
-			lua_call(L, 1, 0);
-			lua_pushstring(L, uv_strerror(r));
-			return lua_error(L);	
-		}
-		obj->cbself = LXUV_RETAIN(L, -1);
-		return 1;
-	}
+    if(uv_ip4_addr(ip, port, (struct sockaddr_in*)&addr) &&
+       uv_ip6_addr(ip, port, (struct sockaddr_in6*)&addr))
+        return luaL_error(L, "invalid IP address or port");
+    luaL_checktype(L, 4, LUA_TFUNCTION);
+    if(stream = malloc(sizeof(*stream))) {
+        r = uv_tcp_init(uv_default_loop(), stream);
+        if(r < 0) {
+            free(stream);
+            lua_pushstring(L, uv_strerror(r));
+            return lua_error(L);
+        }
+    } else return luaL_error(L, "can't allocate memory");
+    r = uv_tcp_bind((uv_tcp_t *)stream, (struct sockaddr *)&addr, 0);
+    if(r < 0) { 
+        uv_close((uv_handle_t *)stream, (uv_close_cb)free);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);    
+    } else {
+        luaxuv_handle *obj = luaxuv_newuvobj(L, (uv_handle_t *)stream, "TCP");
+        obj->cbref = LXUV_RETAIN(L, 4);
+        r = uv_listen((uv_stream_t *)stream, backlog, luaxuv_on_conn);
+        if(r < 0) { 
+            lua_pushcfunction(L, luaxuv_close);
+            lua_pushvalue(L, -2);
+            lua_call(L, 1, 0);
+            lua_pushstring(L, uv_strerror(r));
+            return lua_error(L);    
+        }
+        obj->cbself = LXUV_RETAIN(L, -1);
+        return 1;
+    }
 }
 
 static void luaxuv_on_timer(uv_timer_t* handle) {
-	luaxuv_handle *obj = handle->data;
-	lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbref);
-	lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbself);
-	lua_call(L_Main, 1, 0);
+    luaxuv_handle *obj = handle->data;
+    lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbref);
+    lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbself);
+    lua_call(L_Main, 1, 0);
 }
 
 static int luaxuv_timer_start(lua_State *L)
 {
-	luaxuv_handle *obj;
-	register int r;
-	int timeout, repeat;
-	uv_timer_t *handle;
-	
-	luaL_checktype(L, 1, LUA_TFUNCTION);
-	timeout = luaL_checkint(L, 2);
-	repeat = luaL_optint(L, 3, 0);
-	handle = malloc(sizeof(uv_timer_t));
-	if((r = uv_timer_init(uv_default_loop(), handle)) < 0) {
-		free(handle);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	obj = luaxuv_newuvobj(L, (uv_handle_t *)handle, "Timer");
-	
-	r = uv_timer_start((uv_timer_t *)obj->data, luaxuv_on_timer, timeout, repeat);
-	if(r < 0) {
-		lua_pushcfunction(L, luaxuv_close);
-		lua_pushvalue(L, -2);
-		lua_call(L, 1, 0);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	obj->cbref = LXUV_RETAIN(L, 1);
-	obj->cbself = LXUV_RETAIN(L, -1);
-	return 1;
+    luaxuv_handle *obj;
+    register int r;
+    int timeout, repeat;
+    uv_timer_t *handle;
+    
+    luaL_checktype(L, 1, LUA_TFUNCTION);
+    timeout = luaL_checkint(L, 2);
+    repeat = luaL_optint(L, 3, 0);
+    handle = malloc(sizeof(uv_timer_t));
+    if((r = uv_timer_init(uv_default_loop(), handle)) < 0) {
+        free(handle);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    obj = luaxuv_newuvobj(L, (uv_handle_t *)handle, "Timer");
+    
+    r = uv_timer_start((uv_timer_t *)obj->data, luaxuv_on_timer, timeout, repeat);
+    if(r < 0) {
+        lua_pushcfunction(L, luaxuv_close);
+        lua_pushvalue(L, -2);
+        lua_call(L, 1, 0);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    obj->cbref = LXUV_RETAIN(L, 1);
+    obj->cbself = LXUV_RETAIN(L, -1);
+    return 1;
 }
 
 static void luaxuv_on_poll(uv_poll_t* handle, int status, int events) {
-	luaxuv_handle *obj = handle->data;
-	lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbref);
-	lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbself);
-	lua_pushinteger(L_Main, status);
-	lua_call(L_Main, 2, 0);
+    luaxuv_handle *obj = handle->data;
+    lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbref);
+    lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbself);
+    lua_pushinteger(L_Main, status);
+    lua_call(L_Main, 2, 0);
 }
 
 static int luaxuv_rpoll_start(lua_State *L)
 {
-	luaxuv_handle *obj;
-	register int r;
-	int fd = luaL_checkint(L, 1);
-	uv_poll_t *handle;
-	
-	luaL_checktype(L, 2, LUA_TFUNCTION);
-	handle = malloc(sizeof(uv_poll_t));
-	if((r = uv_poll_init(uv_default_loop(), handle, fd)) < 0) {
-		free(handle);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	obj = luaxuv_newuvobj(L, (uv_handle_t *)handle, "Poll");
-	
-	r = uv_poll_start((uv_poll_t *)obj->data, UV_READABLE, luaxuv_on_poll);
-	if(r < 0) {
-		lua_pushcfunction(L, luaxuv_close);
-		lua_pushvalue(L, -2);
-		lua_call(L, 1, 0);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	obj->cbref = LXUV_RETAIN(L, 2);
-	obj->cbself = LXUV_RETAIN(L, -1);
-	return 1;
+    luaxuv_handle *obj;
+    register int r;
+    int fd = luaL_checkint(L, 1);
+    uv_poll_t *handle;
+    
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+    handle = malloc(sizeof(uv_poll_t));
+    if((r = uv_poll_init(uv_default_loop(), handle, fd)) < 0) {
+        free(handle);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    obj = luaxuv_newuvobj(L, (uv_handle_t *)handle, "Poll");
+    
+    r = uv_poll_start((uv_poll_t *)obj->data, UV_READABLE, luaxuv_on_poll);
+    if(r < 0) {
+        lua_pushcfunction(L, luaxuv_close);
+        lua_pushvalue(L, -2);
+        lua_call(L, 1, 0);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    obj->cbref = LXUV_RETAIN(L, 2);
+    obj->cbself = LXUV_RETAIN(L, -1);
+    return 1;
 }
 
 static void luaxuv_on_signal(uv_signal_t* handle, int signum) {
 
-	luaxuv_handle *obj = handle->data;
-	lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbref);
-	lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbself);
-	lua_pushinteger(L_Main, signum);
-	lua_call(L_Main, 2, 0);
+    luaxuv_handle *obj = handle->data;
+    lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbref);
+    lua_rawgeti(L_Main, LUA_REGISTRYINDEX, obj->cbself);
+    lua_pushinteger(L_Main, signum);
+    lua_call(L_Main, 2, 0);
 }
 
 static int luaxuv_signal_start(lua_State *L)
 {
-	luaxuv_handle *obj;
-	register int r;
-	int signal = luaL_checkint(L, 1);
-	uv_signal_t *handle;
-	
-	luaL_checktype(L, 2, LUA_TFUNCTION);
-	handle = malloc(sizeof(uv_signal_t));
-	if((r = uv_signal_init(uv_default_loop(), handle)) < 0) {
-		free(handle);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	obj = luaxuv_newuvobj(L, (uv_handle_t *)handle, "Signal");
-	
-	r = uv_signal_start((uv_signal_t *)obj->data, luaxuv_on_signal, signal);
-	if(r < 0) {
-		lua_pushcfunction(L, luaxuv_close);
-		lua_pushvalue(L, -2);
-		lua_call(L, 1, 0);
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	obj->cbref = LXUV_RETAIN(L, 2);
-	obj->cbself = LXUV_RETAIN(L, -1);
-	return 1;
+    luaxuv_handle *obj;
+    register int r;
+    int signal = luaL_checkint(L, 1);
+    uv_signal_t *handle;
+    
+    luaL_checktype(L, 2, LUA_TFUNCTION);
+    handle = malloc(sizeof(uv_signal_t));
+    if((r = uv_signal_init(uv_default_loop(), handle)) < 0) {
+        free(handle);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    obj = luaxuv_newuvobj(L, (uv_handle_t *)handle, "Signal");
+    
+    r = uv_signal_start((uv_signal_t *)obj->data, luaxuv_on_signal, signal);
+    if(r < 0) {
+        lua_pushcfunction(L, luaxuv_close);
+        lua_pushvalue(L, -2);
+        lua_call(L, 1, 0);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    obj->cbref = LXUV_RETAIN(L, 2);
+    obj->cbself = LXUV_RETAIN(L, -1);
+    return 1;
 }
 
 
 static int l_get_total_memory(lua_State* L) {
-	lua_pushnumber(L, uv_get_total_memory());
-	return 1;
+    lua_pushnumber(L, uv_get_total_memory());
+    return 1;
 }
 
 static int l_update_time(lua_State* L) {
-	uv_update_time(uv_default_loop());
-	return 0;
+    uv_update_time(uv_default_loop());
+    return 0;
 }
 
 static int l_set_process_title(lua_State* L) {
-	const char* title = luaL_checkstring(L, 1);
-	int r = uv_set_process_title(title);
-	if(r < 0)  {
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	return 0;
+    const char* title = luaL_checkstring(L, 1);
+    int r = uv_set_process_title(title);
+    if(r < 0)  {
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    return 0;
 }
 
 static int l_chdir(lua_State* L) {
-	int r = uv_chdir(luaL_checkstring(L, 1));
-	if(r < 0)  {
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	return 0;
+    int r = uv_chdir(luaL_checkstring(L, 1));
+    if(r < 0)  {
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    return 0;
 }
 
 static int l_kill(lua_State* L) {
-	int pid = luaL_checkinteger(L, 1);
-	int signum = luaL_optinteger(L, 2, SIGTERM);
-	int r = uv_kill(pid, signum);
-	if(r < 0) {
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	return 0;
+    int pid = luaL_checkinteger(L, 1);
+    int signum = luaL_optinteger(L, 2, SIGTERM);
+    int r = uv_kill(pid, signum);
+    if(r < 0) {
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    return 0;
 }
 
 static int l_uptime(lua_State* L) {
-	double uptime;
-	int r = uv_uptime(&uptime);
-	if(r < 0) {
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	lua_pushnumber(L, uptime);
-	return 1;
+    double uptime;
+    int r = uv_uptime(&uptime);
+    if(r < 0) {
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    lua_pushnumber(L, uptime);
+    return 1;
 }
 
 static int l_run(lua_State *L)
 {
-	int r;
-	if(L_Main) return luaL_error(L, "calling uv.run in a callback");
-	L_Main = L;
-	r = uv_run(uv_default_loop(), UV_RUN_DEFAULT);
-	L_Main = NULL;
-	if(r < 0) {
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	return 0;
+    int r;
+    if(L_Main) return luaL_error(L, "calling uv.run in a callback");
+    L_Main = L;
+    r = uv_run(uv_default_loop(), UV_RUN_DEFAULT);
+    L_Main = NULL;
+    if(r < 0) {
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    return 0;
 }
 
 static int l_run_nowait(lua_State *L)
 {
-	int r;
-	if(L_Main) return luaL_error(L, "calling uv.run_nowait in a callback");
-	L_Main = L;
-	r = uv_run(uv_default_loop(), UV_RUN_NOWAIT);
-	L_Main = NULL;
-	if(r < 0) {
-		lua_pushstring(L, uv_strerror(r));
-		return lua_error(L);
-	}
-	return 0;
+    int r;
+    if(L_Main) return luaL_error(L, "calling uv.run_nowait in a callback");
+    L_Main = L;
+    r = uv_run(uv_default_loop(), UV_RUN_NOWAIT);
+    L_Main = NULL;
+    if(r < 0) {
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    return 0;
 }
 
 static int l_stop(lua_State *L)
 {
-	uv_stop(uv_default_loop());
-	return 0;
+    uv_stop(uv_default_loop());
+    return 0;
 }
 
 /* Ultragear Request Parser */
@@ -615,123 +615,123 @@ static int l_stop(lua_State *L)
 
 static int l_decode_request(lua_State *L)
 {
-	const char *chunk;
-	int i = 0, currentExpect = 0, currentBase;
-	int verbOrKeyLength;
-	char headerKey[32];
+    const char *chunk;
+    int i = 0, currentExpect = 0, currentBase;
+    int verbOrKeyLength;
+    char headerKey[32];
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
     chunk = ref->sb->data;
     if(ref->sb->length > 0x10000)
         return luaL_error(L, "request too long");
-	while(i < ref->sb->length) {
-		switch(currentExpect) {
-			case 0: // expect HTTP method
-				if(chunk[i] == ' ') {
-					verbOrKeyLength = i;
-					currentBase = i + 1;
-					currentExpect = 1;
-				}
-				else if(!CURRENT_ISUPPER)
-					goto on_malformed_header;
-				break;
-			case 1: // expect resource
-				if(chunk[i] == ' ') {
-					lua_createtable(L, 0, 3);
-					lua_pushlstring(L, chunk, verbOrKeyLength);
-					lua_setfield(L, -2, "method");
-					lua_pushlstring(L, CURRENT_VALUE);
-					lua_setfield(L, -2, "resource_orig");
-					currentBase = i + 1;
-					currentExpect = 2;
-				}
-				else if(chunk[i] >= 0 && chunk[i] < 32)
-					goto on_malformed_header;
-				break;
-			case 2: // expect HTTP version - HTTP/1.
-				if(chunk[i] == '.') {
-					if(i - currentBase != 6 ||
-					   chunk[currentBase + 0] != 'H' ||
-					   chunk[currentBase + 1] != 'T' ||
-					   chunk[currentBase + 2] != 'T' ||
-					   chunk[currentBase + 3] != 'P' ||
-					   chunk[currentBase + 4] != '/' ||
-					   chunk[currentBase + 5] != '1') {
-						goto on_malformed_header;
-					}
-					lua_createtable(L, 0, 8);
-					lua_pushvalue(L, -1);
-					lua_setfield(L, -3, "headers");
-					currentBase = i + 1;
-					currentExpect = 3;
-				}
-				else if(!CURRENT_ISUPPER &&
-				        chunk[i] != '/' && chunk[i] != '1') {
-					goto on_malformed_header;
-				}
-				break;
-			case 3: // expect HTTP subversion
-				if(chunk[i] == '\n') {
-					currentBase = i + 1;
-					currentExpect = 4;
-				}
-				else if(chunk[i] == '\r')
-					currentExpect = 100;
-				else if((chunk[i] != '0' && chunk[i] != '1') ||
-				        i != currentBase)
-					goto on_malformed_header;
-				break;
-			case 4: // expect HTTP header key
-				if(chunk[i] == ':') {
-					verbOrKeyLength = i - currentBase;
-					currentExpect = 5;
-				}
-				else if(i == currentBase && chunk[i] == '\n')
-					goto entire_request_decoded;
-				else if(i == currentBase && chunk[i] == '\r')
-					currentExpect = 101;
-				else if(i - currentBase > 30)
-					goto on_malformed_header;
-				else if(CURRENT_ISUPPER)
-					headerKey[i - currentBase] = chunk[i] + 32;
-				else if(CURRENT_ISLOWER || chunk[i] == '-' || chunk[i] == '_' ||
+    while(i < ref->sb->length) {
+        switch(currentExpect) {
+            case 0: // expect HTTP method
+                if(chunk[i] == ' ') {
+                    verbOrKeyLength = i;
+                    currentBase = i + 1;
+                    currentExpect = 1;
+                }
+                else if(!CURRENT_ISUPPER)
+                    goto on_malformed_header;
+                break;
+            case 1: // expect resource
+                if(chunk[i] == ' ') {
+                    lua_createtable(L, 0, 3);
+                    lua_pushlstring(L, chunk, verbOrKeyLength);
+                    lua_setfield(L, -2, "method");
+                    lua_pushlstring(L, CURRENT_VALUE);
+                    lua_setfield(L, -2, "resource_orig");
+                    currentBase = i + 1;
+                    currentExpect = 2;
+                }
+                else if(chunk[i] >= 0 && chunk[i] < 32)
+                    goto on_malformed_header;
+                break;
+            case 2: // expect HTTP version - HTTP/1.
+                if(chunk[i] == '.') {
+                    if(i - currentBase != 6 ||
+                       chunk[currentBase + 0] != 'H' ||
+                       chunk[currentBase + 1] != 'T' ||
+                       chunk[currentBase + 2] != 'T' ||
+                       chunk[currentBase + 3] != 'P' ||
+                       chunk[currentBase + 4] != '/' ||
+                       chunk[currentBase + 5] != '1') {
+                        goto on_malformed_header;
+                    }
+                    lua_createtable(L, 0, 8);
+                    lua_pushvalue(L, -1);
+                    lua_setfield(L, -3, "headers");
+                    currentBase = i + 1;
+                    currentExpect = 3;
+                }
+                else if(!CURRENT_ISUPPER &&
+                        chunk[i] != '/' && chunk[i] != '1') {
+                    goto on_malformed_header;
+                }
+                break;
+            case 3: // expect HTTP subversion
+                if(chunk[i] == '\n') {
+                    currentBase = i + 1;
+                    currentExpect = 4;
+                }
+                else if(chunk[i] == '\r')
+                    currentExpect = 100;
+                else if((chunk[i] != '0' && chunk[i] != '1') ||
+                        i != currentBase)
+                    goto on_malformed_header;
+                break;
+            case 4: // expect HTTP header key
+                if(chunk[i] == ':') {
+                    verbOrKeyLength = i - currentBase;
+                    currentExpect = 5;
+                }
+                else if(i == currentBase && chunk[i] == '\n')
+                    goto entire_request_decoded;
+                else if(i == currentBase && chunk[i] == '\r')
+                    currentExpect = 101;
+                else if(i - currentBase > 30)
+                    goto on_malformed_header;
+                else if(CURRENT_ISUPPER)
+                    headerKey[i - currentBase] = chunk[i] + 32;
+                else if(CURRENT_ISLOWER || chunk[i] == '-' || chunk[i] == '_' ||
                         CURRENT_ISNUMBER)
-					headerKey[i - currentBase] = chunk[i];
-				else
-					goto on_malformed_header;
-				break;
-			case 5: // skip spaces between column and value
-				if(chunk[i] != ' ') {
-					currentBase = i;
-					currentExpect = 6;
-				}
-				break;
-			case 6: // expect HTTP header value
-				if(!(chunk[i] >= 0 && chunk[i] < 32))
-					break;
-				else if(chunk[i] == '\n' || chunk[i] == '\r') {
-					lua_pushlstring(L, headerKey, verbOrKeyLength);
-					lua_pushlstring(L, CURRENT_VALUE);
-					lua_rawset(L, -3);
-					currentBase = i + 1;
-					currentExpect = chunk[i] == '\r' ? 100 : 4;
-					break;
-				}
-				goto on_malformed_header;
-			case 100: // expect \n after '\r'
-				if(chunk[i] != '\n') goto on_malformed_header;
-				currentBase = i + 1;
-				currentExpect = 4;
-				break;
-			case 101: // expect final \n
-				if(chunk[i] != '\n') goto on_malformed_header;
-				goto entire_request_decoded;
-		}
-		i++;
-	}
-	lua_pushnil(L);
-	return 1;
+                    headerKey[i - currentBase] = chunk[i];
+                else
+                    goto on_malformed_header;
+                break;
+            case 5: // skip spaces between column and value
+                if(chunk[i] != ' ') {
+                    currentBase = i;
+                    currentExpect = 6;
+                }
+                break;
+            case 6: // expect HTTP header value
+                if(!(chunk[i] >= 0 && chunk[i] < 32))
+                    break;
+                else if(chunk[i] == '\n' || chunk[i] == '\r') {
+                    lua_pushlstring(L, headerKey, verbOrKeyLength);
+                    lua_pushlstring(L, CURRENT_VALUE);
+                    lua_rawset(L, -3);
+                    currentBase = i + 1;
+                    currentExpect = chunk[i] == '\r' ? 100 : 4;
+                    break;
+                }
+                goto on_malformed_header;
+            case 100: // expect \n after '\r'
+                if(chunk[i] != '\n') goto on_malformed_header;
+                currentBase = i + 1;
+                currentExpect = 4;
+                break;
+            case 101: // expect final \n
+                if(chunk[i] != '\n') goto on_malformed_header;
+                goto entire_request_decoded;
+        }
+        i++;
+    }
+    lua_pushnil(L);
+    return 1;
 on_malformed_header:
-	return luaL_error(L, "request is malformed");
+    return luaL_error(L, "request is malformed");
 entire_request_decoded:
     lua_pop(L, 1); // remove header table on stack top
     stb_pull(ref->sb, i + 1);
@@ -740,88 +740,88 @@ entire_request_decoded:
 
 static int l_decode_response(lua_State *L)
 {
-	const char *chunk;
-	int i = 0, currentExpect = 0, currentBase = 0, keyLength;
-	char headerKey[32];
+    const char *chunk;
+    int i = 0, currentExpect = 0, currentBase = 0, keyLength;
+    char headerKey[32];
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
     chunk = ref->sb->data;
     if(ref->sb->length > 0x10000)
         return luaL_error(L, "response too long");
-	while(i < ref->sb->length) {
-		switch(currentExpect) {
-			case 0: // expect HTTP version - HTTP/1.
-				if(chunk[i] == '.') {
-					if(i - currentBase != 6 ||
-					   chunk[currentBase + 0] != 'H' ||
-					   chunk[currentBase + 1] != 'T' ||
-					   chunk[currentBase + 2] != 'T' ||
-					   chunk[currentBase + 3] != 'P' ||
-					   chunk[currentBase + 4] != '/' ||
-					   chunk[currentBase + 5] != '1') {
-						goto on_malformed_header;
-					}
-					currentBase = i + 1;
-					currentExpect = 1;
-				}
-				else if(!CURRENT_ISUPPER &&
-				        chunk[i] != '/' && chunk[i] != '1')
-					goto on_malformed_header;
-				break;
-			case 1: // expect HTTP subversion
-				if(chunk[i] == ' ') {
-					currentBase = i + 1;
-					currentExpect = 2;
-				}
-				else if((chunk[i] != '0' && chunk[i] != '1') ||
-				        i != currentBase)
-					goto on_malformed_header;
-				break;
-			case 2: // expect HTTP status code
-				if(chunk[i] == ' ') {
-					lua_createtable(L, 1, 8);
-					lua_pushinteger(L, atoi(chunk + currentBase));
-					lua_rawseti(L, -2, 1);
-					currentBase = i + 1;
-					currentExpect = 3;
-				}
-				else if(!CURRENT_ISNUMBER)
-					goto on_malformed_header;
-				break;
-			case 3: // skip HTTP status text
-				if(chunk[i] == '\n') {
-					currentBase = i + 1;
-					currentExpect = 4;
-				}
-				else if(chunk[i] == '\r')
-					currentExpect = 100;
-				break;
-			case 4: // expect HTTP header key
-				if(chunk[i] == ':') {
-					keyLength = i - currentBase;
-					currentExpect = 5;
-				}
-				else if(i == currentBase && chunk[i] == '\n')
-					goto entire_request_decoded;
-				else if(i == currentBase && chunk[i] == '\r')
-					currentExpect = 101;
-				else if(i - currentBase > 30)
-					goto on_malformed_header;
-				else if(CURRENT_ISUPPER || CURRENT_ISLOWER ||
+    while(i < ref->sb->length) {
+        switch(currentExpect) {
+            case 0: // expect HTTP version - HTTP/1.
+                if(chunk[i] == '.') {
+                    if(i - currentBase != 6 ||
+                       chunk[currentBase + 0] != 'H' ||
+                       chunk[currentBase + 1] != 'T' ||
+                       chunk[currentBase + 2] != 'T' ||
+                       chunk[currentBase + 3] != 'P' ||
+                       chunk[currentBase + 4] != '/' ||
+                       chunk[currentBase + 5] != '1') {
+                        goto on_malformed_header;
+                    }
+                    currentBase = i + 1;
+                    currentExpect = 1;
+                }
+                else if(!CURRENT_ISUPPER &&
+                        chunk[i] != '/' && chunk[i] != '1')
+                    goto on_malformed_header;
+                break;
+            case 1: // expect HTTP subversion
+                if(chunk[i] == ' ') {
+                    currentBase = i + 1;
+                    currentExpect = 2;
+                }
+                else if((chunk[i] != '0' && chunk[i] != '1') ||
+                        i != currentBase)
+                    goto on_malformed_header;
+                break;
+            case 2: // expect HTTP status code
+                if(chunk[i] == ' ') {
+                    lua_createtable(L, 1, 8);
+                    lua_pushinteger(L, atoi(chunk + currentBase));
+                    lua_rawseti(L, -2, 1);
+                    currentBase = i + 1;
+                    currentExpect = 3;
+                }
+                else if(!CURRENT_ISNUMBER)
+                    goto on_malformed_header;
+                break;
+            case 3: // skip HTTP status text
+                if(chunk[i] == '\n') {
+                    currentBase = i + 1;
+                    currentExpect = 4;
+                }
+                else if(chunk[i] == '\r')
+                    currentExpect = 100;
+                break;
+            case 4: // expect HTTP header key
+                if(chunk[i] == ':') {
+                    keyLength = i - currentBase;
+                    currentExpect = 5;
+                }
+                else if(i == currentBase && chunk[i] == '\n')
+                    goto entire_request_decoded;
+                else if(i == currentBase && chunk[i] == '\r')
+                    currentExpect = 101;
+                else if(i - currentBase > 30)
+                    goto on_malformed_header;
+                else if(CURRENT_ISUPPER || CURRENT_ISLOWER ||
                         CURRENT_ISNUMBER || chunk[i] == '-')
-					headerKey[i - currentBase] = chunk[i];
-				else
-					goto on_malformed_header;
-				break;
-			case 5: // skip spaces between column and value
-				if(chunk[i] != ' ') {
-					currentBase = i;
-					currentExpect = 6;
-				}
-				break;
-			case 6: // expect HTTP header value
-				if(!(chunk[i] >= 0 && chunk[i] < 32))
-					break;
-				else if(chunk[i] == '\n' || chunk[i] == '\r') {
+                    headerKey[i - currentBase] = chunk[i];
+                else
+                    goto on_malformed_header;
+                break;
+            case 5: // skip spaces between column and value
+                if(chunk[i] != ' ') {
+                    currentBase = i;
+                    currentExpect = 6;
+                }
+                break;
+            case 6: // expect HTTP header value
+                if(!(chunk[i] >= 0 && chunk[i] < 32))
+                    break;
+                else if(chunk[i] == '\n' || chunk[i] == '\r') {
                     lua_pushlstring(L, headerKey, keyLength);
                     lua_pushvalue(L, -1);
                     lua_rawget(L, -3);
@@ -841,29 +841,29 @@ static int l_decode_response(lua_State *L)
                         lua_pop(L, 2);
                     } else {
                         lua_pop(L, 1);
-					    lua_pushlstring(L, CURRENT_VALUE);
-					    lua_rawset(L, -3);
+                        lua_pushlstring(L, CURRENT_VALUE);
+                        lua_rawset(L, -3);
                     }
-					currentBase = i + 1;
-					currentExpect = chunk[i] == '\r' ? 100 : 4;
-					break;
-				}
-				goto on_malformed_header;
-			case 100: // expect \n after '\r'
-				if(chunk[i] != '\n') goto on_malformed_header;
-				currentBase = i + 1;
-				currentExpect = 4;
-				break;
-			case 101: // expect final \n
-				if(chunk[i] != '\n') goto on_malformed_header;
-				goto entire_request_decoded;
-		}
-		i++;
-	}
-	lua_pushnil(L);
-	return 1;
+                    currentBase = i + 1;
+                    currentExpect = chunk[i] == '\r' ? 100 : 4;
+                    break;
+                }
+                goto on_malformed_header;
+            case 100: // expect \n after '\r'
+                if(chunk[i] != '\n') goto on_malformed_header;
+                currentBase = i + 1;
+                currentExpect = 4;
+                break;
+            case 101: // expect final \n
+                if(chunk[i] != '\n') goto on_malformed_header;
+                goto entire_request_decoded;
+        }
+        i++;
+    }
+    lua_pushnil(L);
+    return 1;
 on_malformed_header:
-	return luaL_error(L, "response is malformed");
+    return luaL_error(L, "response is malformed");
 entire_request_decoded:
     stb_pull(ref->sb, i + 1);
     return 1;
@@ -984,7 +984,7 @@ static int l_decode_any(lua_State *L)
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
     lua_pushlstring(L, ref->sb->data, ref->sb->length);
     stb_pull(ref->sb, ref->sb->length);
-	return 1;
+    return 1;
 }
 
 static int l_encode_fcgi(lua_State *L)
@@ -1063,58 +1063,58 @@ static const char *mode2string (mode_t mode) {
 }
 
 static int l_stat(lua_State *L) {
-	struct stat info;
-	const char *file = luaL_checkstring (L, 1);
+    struct stat info;
+    const char *file = luaL_checkstring (L, 1);
 
-	if (stat(file, &info)) {
-		lua_pushnil(L);
-		lua_pushstring(L, strerror(errno));
-		return 2;
-	}
-	lua_newtable (L);
-	lua_pushstring(L, mode2string (info.st_mode));
-	lua_setfield(L, -2, "mode");
-	lua_pushinteger(L, (lua_Integer) info.st_mtime);
-	lua_setfield(L, -2, "modification");
-	lua_pushinteger(L, (lua_Integer) info.st_size);
-	lua_setfield(L, -2, "size");
-	return 1;
+    if (stat(file, &info)) {
+        lua_pushnil(L);
+        lua_pushstring(L, strerror(errno));
+        return 2;
+    }
+    lua_newtable (L);
+    lua_pushstring(L, mode2string (info.st_mode));
+    lua_setfield(L, -2, "mode");
+    lua_pushinteger(L, (lua_Integer) info.st_mtime);
+    lua_setfield(L, -2, "modification");
+    lua_pushinteger(L, (lua_Integer) info.st_size);
+    lua_setfield(L, -2, "size");
+    return 1;
 }
 
 static luaL_Reg lreg_main[] = {
-	{ "connect", l_tcp_connect },
-	{ "tcp_connect", l_tcp_connect },
-	{ "pipe_connect", l_pipe_connect },
-	{ "listen", l_listen },
-	{ "run", l_run },
-	{ "run_nowait", l_run_nowait },
-	{ "stop", l_stop },
-	{ "new_udp", luaxuv_udp_new },
-	{ "udp_new", luaxuv_udp_new },
-	{ "udp_bind", luaxuv_udp_bind },
-	{ "udp_send", luaxuv_udp_send },
-	{ "udp_recv_start", luaxuv_udp_recv_start },
-	{ "udp_recv_stop", luaxuv_udp_recv_stop },
-	{ "rpoll_start", luaxuv_rpoll_start },
-	{ "timer_start", luaxuv_timer_start },
-	{ "signal_start", luaxuv_signal_start },
-	{ "close", luaxuv_close },
-	{ "kill", l_kill },
-	{ "uptime", l_uptime },
-	{ "update_time", l_update_time },
-	{ "get_total_memory", l_get_total_memory },
-	{ "set_process_title", l_set_process_title },
-	{ "chdir", l_chdir },
-	{ "decode_request", l_decode_request },
-	{ "decode_response", l_decode_response },
-	{ "decode_fcgi", l_decode_fcgi },
-	{ "decode_wsframe", l_decode_wsframe },
-	{ "decode_any", l_decode_any },
-	{ "encode_fcgi", l_encode_fcgi },
-	{ "dup_stb", l_dup_stb },
-	{ "check_tls", l_check_tls },
-	{ "stat", l_stat },
-	{ NULL, NULL }
+    { "connect", l_tcp_connect },
+    { "tcp_connect", l_tcp_connect },
+    { "pipe_connect", l_pipe_connect },
+    { "listen", l_listen },
+    { "run", l_run },
+    { "run_nowait", l_run_nowait },
+    { "stop", l_stop },
+    { "new_udp", luaxuv_udp_new },
+    { "udp_new", luaxuv_udp_new },
+    { "udp_bind", luaxuv_udp_bind },
+    { "udp_send", luaxuv_udp_send },
+    { "udp_recv_start", luaxuv_udp_recv_start },
+    { "udp_recv_stop", luaxuv_udp_recv_stop },
+    { "rpoll_start", luaxuv_rpoll_start },
+    { "timer_start", luaxuv_timer_start },
+    { "signal_start", luaxuv_signal_start },
+    { "close", luaxuv_close },
+    { "kill", l_kill },
+    { "uptime", l_uptime },
+    { "update_time", l_update_time },
+    { "get_total_memory", l_get_total_memory },
+    { "set_process_title", l_set_process_title },
+    { "chdir", l_chdir },
+    { "decode_request", l_decode_request },
+    { "decode_response", l_decode_response },
+    { "decode_fcgi", l_decode_fcgi },
+    { "decode_wsframe", l_decode_wsframe },
+    { "decode_any", l_decode_any },
+    { "encode_fcgi", l_encode_fcgi },
+    { "dup_stb", l_dup_stb },
+    { "check_tls", l_check_tls },
+    { "stat", l_stat },
+    { NULL, NULL }
 };
 
 extern luaL_Reg lreg_codec[];
@@ -1125,26 +1125,26 @@ LUA_API int luaopen_webcore(lua_State *L)
 {
     luaopen_webcore_stream(L);
 
-	luaL_newmetatable(L, LXUV_MT_STBUF);
-	lua_newtable(L);
-	luaL_register(L, NULL, lreg_stb_methods);
+    luaL_newmetatable(L, LXUV_MT_STBUF);
+    lua_newtable(L);
+    luaL_register(L, NULL, lreg_stb_methods);
     lua_pushcclosure(L, l_stb__index, 1);
-	lua_setfield(L, -2, "__index");
-	lua_pushcfunction(L, l_stb__gc);
-	lua_setfield(L, -2, "__gc");
-	lua_pushcfunction(L, l_stb__tostring);
-	lua_setfield(L, -2, "__tostring");
-	lua_pushcfunction(L, l_stb__len);
-	lua_setfield(L, -2, "__len");
-	
-	luaL_newmetatable(L, LXUV_MT_HANDLE);
-	luaL_register(L, NULL, lreg_handle);
-	lua_pop(L, 2);
-	
-	lua_newtable(L);
-	luaL_register(L, NULL, lreg_main);
-	luaL_register(L, NULL, lreg_codec);
-	lua_pushstring(L, uv_version_string());
-	lua_setfield(L, -2, "version");
-	return 1;
+    lua_setfield(L, -2, "__index");
+    lua_pushcfunction(L, l_stb__gc);
+    lua_setfield(L, -2, "__gc");
+    lua_pushcfunction(L, l_stb__tostring);
+    lua_setfield(L, -2, "__tostring");
+    lua_pushcfunction(L, l_stb__len);
+    lua_setfield(L, -2, "__len");
+    
+    luaL_newmetatable(L, LXUV_MT_HANDLE);
+    luaL_register(L, NULL, lreg_handle);
+    lua_pop(L, 2);
+    
+    lua_newtable(L);
+    luaL_register(L, NULL, lreg_main);
+    luaL_register(L, NULL, lreg_codec);
+    lua_pushstring(L, uv_version_string());
+    lua_setfield(L, -2, "version");
+    return 1;
 }
