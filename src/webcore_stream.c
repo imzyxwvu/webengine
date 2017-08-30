@@ -13,9 +13,6 @@
 
 #define LXUV_MT_STREAM "WebCore UV Stream"
 
-#define LXUV_FREE_AND_UNREF(func, var) \
-    if(var) func(var), var = NULL
-
 #ifndef NO_SSL
 #include <openssl/ssl.h>
 #endif
@@ -176,7 +173,10 @@ static int l_stream__gc(lua_State *L)
     }
     LXUV_RELEASE(L_Main, self->ref_ssl_ctx);
 #endif
-    LXUV_FREE_AND_UNREF(stb_unref, self->sb);
+    if(self->sb) {
+        stb_unref(self->sb);
+        self->sb = NULL;
+    }
     return 0;
 }
 
