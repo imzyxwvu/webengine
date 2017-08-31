@@ -28,7 +28,6 @@ streambuffer_t *stb_alloc() {
     if(sb) {
         sb->nref = 1;
         sb->length = 0;
-        sb->revision = 0;
         sb->data = NULL;
     }
     return sb;
@@ -42,7 +41,6 @@ void stb_pull(streambuffer_t *sb, int nb) {
         memmove(sb->data, sb->data + nb, sb->length);
     }
     sb->data = realloc(sb->data, sb->length);
-    sb->revision++;
 }
 
 streambuffer_t *stb_retain(streambuffer_t *sb) {
@@ -76,18 +74,12 @@ static int l_stb__index(lua_State *L) {
 
 static int l_stb__len(lua_State *L) {
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
-    if(ref->revision != ref->sb->revision) {
-        return luaL_error(L, "data has changed");
-    }
     lua_pushinteger(L, ref->sb->length);
     return 1;
 }
 
 static int l_stb__tostring(lua_State *L) {
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
-    if(ref->revision != ref->sb->revision) {
-        return luaL_error(L, "data has changed");
-    }
     lua_pushlstring(L, ref->sb->data, ref->sb->length);
     return 1;
 }
@@ -100,13 +92,8 @@ static int l_stb__gc(lua_State *L) {
 
 static int l_stb_pull(lua_State *L) {
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
-    int len = luaL_checkinteger(L, 2);
-    if(ref->revision != ref->sb->revision) {
-        return luaL_error(L, "data has changed");
-    }
-    stb_pull(ref->sb, len);
-    ref->revision = ref->sb->revision;
-    return 1;
+    stb_pull(ref->sb, luaL_checkinteger(L, 2));
+    return 0;
 }
 
 static luaL_Reg lreg_stb_methods[] = {
@@ -118,7 +105,6 @@ void luaxuv_pushstb(lua_State *L, streambuffer_t *sb)
 {
     streambuffer_ref_t *ref = lua_newuserdata(L, sizeof(streambuffer_ref_t));
     ref->sb = stb_retain(sb);
-    ref->revision = sb->revision;
     luaL_getmetatable(L, LXUV_MT_STBUF);
     lua_setmetatable(L, -2);
 }

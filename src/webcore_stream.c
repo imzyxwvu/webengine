@@ -483,7 +483,6 @@ static void luaxuv_on_data(uv_stream_t* handle, ssize_t nread, const uv_buf_t* b
 #else
         self->sb->length += nread;
 #endif
-        self->sb->revision++;
         lua_rawgeti(L_Main, LUA_REGISTRYINDEX, self->ref_decoder);
         if(lua_isfunction(L_Main, -1)) {
             luaxuv_pushstb(L_Main, self->sb);

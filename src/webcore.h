@@ -2,14 +2,13 @@
 #define _WEBCORE_H
 
 typedef struct {
-    int nref, revision;
+    int nref;
     size_t length;
     unsigned char *data;
 } streambuffer_t;
 
 typedef struct {
     streambuffer_t *sb;
-    int revision;
 } streambuffer_ref_t;
 
 streambuffer_t *stb_alloc();
