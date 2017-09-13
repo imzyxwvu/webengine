@@ -527,17 +527,16 @@ end
 function HTTP.ProceedRequest(dest, vars, postdata, outfunc)
     local co = coroutine.running()
     local stream
-    local watchdog = core.timer_start(function(self)
-        stream:close()
-        core.close(self)
-        coroutine.resume(co, nil, "timeout bad gateway")
-    end, 3000, 0)
     if type(dest) == "string" then
         stream = core.pipe_connect(dest, function(...)
-            core.close(watchdog)
             coroutine.resume(co, ...)
         end)
     else
+        local watchdog = core.timer_start(function(self)
+            stream:close()
+            core.close(self)
+            coroutine.resume(co, nil, "timeout bad gateway")
+        end, 3000, 0)
         stream = core.tcp_connect("127.0.0.1", dest, function(...)
             core.close(watchdog)
             coroutine.resume(co, ...)

@@ -974,25 +974,27 @@ static int l_decode_any(lua_State *L)
 static int l_encode_fcgi(lua_State *L)
 {
     int optype = luaL_checkinteger(L, 1);
-    int length = 0;
+    size_t length = 0;
     const char *payload;
     streambuffer_t *stb;
+    unsigned char *buffer;
     if(!lua_isnoneornil(L, 2))
-        payload = luaL_checklstring(L, 2, (size_t *)&length);
+        payload = luaL_checklstring(L, 2, &length);
     if(length > 0xffff)
         return luaL_error(L, "payload too long");
     if(NULL == (stb = stb_alloc()))
         return luaL_error(L, "memory allocation failure");
-    if(NULL == (stb->data = realloc(stb->data, length + 8))) {
+    if(NULL == (buffer = realloc(stb->data, length + 8))) {
         stb_unref(stb);
         return luaL_error(L, "memory allocation failure");
     }
-    stb->data[0] = 0x1; // FCGI_VERSION_1
-    stb->data[1] = optype;
-    stb->data[2] = 0, stb->data[3] = 1; // FCGI_NULL_REQUEST_ID
-    stb->data[4] = (length & 0xff00) >> 8, stb->data[5] = length & 0xff;
-    stb->data[6] = 0, stb->data[7] = 0;
-    memcpy(stb->data + 8, payload, length); 
+    buffer[0] = 0x1; // FCGI_VERSION_1
+    buffer[1] = optype;
+    buffer[2] = 0, buffer[3] = 1; // FCGI_NULL_REQUEST_ID
+    buffer[4] = (length & 0xff00) >> 8, buffer[5] = length & 0xff;
+    buffer[6] = 0, buffer[7] = 0;
+    memcpy(buffer + 8, payload, length); 
+    stb->data = buffer;
     stb->length = length + 8;
     luaxuv_pushstb(L, stb);
     stb_unref(stb);
