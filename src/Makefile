@@ -4,7 +4,7 @@ all: webcore.so
 
 webcore.so: webcore_codec.o webcore_stream.o webcore.o
 	@echo "    LD\t$< -> $@"
-	@$(CC) --shared -o $@ $< -luv -lssl
+	@$(CC) --shared -o $@ $< -luv -lssl -lcrypto
 
 %.o: %.c
 	@echo "    CC\t$<"
