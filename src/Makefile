@@ -3,8 +3,8 @@ CFLAGS+=-O2
 all: webcore.so
 
 webcore.so: webcore_codec.o webcore_stream.o webcore.o
-	@echo "    LD\t$< -> $@"
-	@$(CC) --shared -o $@ $< -luv -lssl -lcrypto
+	@echo "    LD\t$@"
+	@$(CC) --shared -o $@ webcore_codec.o webcore_stream.o webcore.o -luv -lssl -lcrypto
 
 %.o: %.c
 	@echo "    CC\t$<"
