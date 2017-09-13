@@ -11,7 +11,6 @@
 #include <lua.h>
 #include <lauxlib.h>
 #ifndef NO_SSL
-# include <openssl/crypto.h>
 # include <openssl/sha.h>
 #endif
 
@@ -378,7 +377,6 @@ static int l_sha1(lua_State *L) {
         return luaL_error(L, "can not initialize SHA_CTX");
     SHA1_Update(&c, msg, msglen);
     SHA1_Final(m, &c);
-    OPENSSL_cleanse(&c, sizeof(c));
     lua_pushlstring(L, m, SHA_DIGEST_LENGTH);
     return 1;
 }
