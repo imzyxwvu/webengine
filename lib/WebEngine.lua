@@ -317,7 +317,7 @@ function HTTP.ServerVars(req, base)
         CONTENT_TYPE = req.headers["content-type"],
         CONTENT_LENGTH = req.headers["content-length"],
         PATH_INFO = req.resource }
-    server_vars.SERVER_SOFTWARE = HTTP.ServerVer
+    server_vars.SERVER_SOFTWARE = HTTP.serverVer
     server_vars.REQUEST_URI = req.resource_orig
     server_vars.QUERY_STRING = req.query
     server_vars.REQUEST_METHOD = req.method
@@ -342,6 +342,7 @@ function HTTP.ServiceLoop(stream, peername, callback)
             res.connection = "keep-alive"
         end
         req.resource, req.query = req.resource_orig:match("^([^%?]+)%??(.*)")
+        if not req.resource then return res:displayError(400) end
         req.resource = HTTP.UrlDecode(req.resource)
         local postData = tonumber(req.headers["content-length"])
         if postData then
@@ -445,55 +446,54 @@ function HTTP.HandleRequest(req, res, vhost)
             return res:displayError(404, [[<!DOCTYPE html><html>
 <head><title>HTTP Error 404</title></head><body><h1>404 Not Found</h1><p>The page you are requesting is non-existent.</p></body></html>]])
         end
-    else
-        local suffix = f_path:match("%.([A-Za-z0-9]+)$")
-        if suffix then suffix = suffix:lower() end
-        if vhost.fcgiFilters and vhost.fcgiFilters[suffix] then
-            res.connection = "close"
-            local firstBlk = true
-            HTTP.ProceedRequest(vhost.fcgiFilters[suffix], HTTP.ServerVars(req, {
-                SCRIPT_FILENAME = vhost.documentRoot .. f_path,
-                SCRIPT_NAME = f_path,
-                SERVER_NAME = req.svrname or req.headers["host"],
-                DOCUMENT_ROOT = vhost.documentRoot,
-                CONTENT_TYPE = req.headers["content-type"],
-                CONTENT_LENGTH = req.headers["content-length"],
-            }), req.post, function(blk)
-                if firstBlk then
-                    local headEnd, bodyStart = assert(blk:find("\r\n\r\n"))
-                    local head, status = { }, "200 OK"
-                    for l in blk:sub(1, headEnd - 1):gmatch("([^\r\n]+)") do
-                        local k, v = l:match("^([%a%d%-_]+): ?(.+)$")
-                        if k == "Status" then status = v else head[#head + 1] = l end
-                    end
-                    res:rawWrite(("HTTP/1.1 %s\r\nServer: %s\r\nConnection: close\r\n"):
-                        format(status, HTTP.ServerVer))
-                    res:rawWrite(tconcat(head, "\r\n") .. "\r\n\r\n")
-                    res.headerSent, firstBlk = 0, false
-                    if bodyStart >= #blk then return true end
-                    blk = blk:sub(bodyStart + 1, -1)
-                end
-                return res:rawWrite(blk)
-            end)
-            res:stop()
-        elseif req.method == "GET" or req.method == "HEAD" then
-            local lastModified = os.date ("!%a, %d %b %Y %H:%M:%S GMT", f_attr.modification)
-            if req.headers["if-modified-since"] == lastModified then
-                res:writeHeader(304, { ["Last-Modified"] = lastModified })
-            elseif req.method == "HEAD" then
-                res:writeHeader(200, {
-                    ["Last-Modified"] = lastModified,
-                    ["Content-Type"] = HTTP.mimeTypes[suffix],
-                    ["Content-Length"] = f_attr.size })
-            else
-                return res:serveFile{
-                    vhost.documentRoot .. f_path,
-                    lastModified = lastModified,
-                    range = req.headers.range,
-                    contentType = HTTP.mimeTypes[suffix] }
-            end
-        else return res:displayError(405) end
     end
+    local suffix = f_path:match("%.([A-Za-z0-9]+)$")
+    if suffix then suffix = suffix:lower() end
+    if vhost.fcgiFilters and vhost.fcgiFilters[suffix] then
+        res.connection = "close"
+        local firstBlk = true
+        HTTP.ProceedRequest(vhost.fcgiFilters[suffix], HTTP.ServerVars(req, {
+            SCRIPT_FILENAME = vhost.documentRoot .. f_path,
+            SCRIPT_NAME = f_path,
+            SERVER_NAME = req.svrname or req.headers["host"],
+            DOCUMENT_ROOT = vhost.documentRoot,
+            CONTENT_TYPE = req.headers["content-type"],
+            CONTENT_LENGTH = req.headers["content-length"],
+        }), req.post, function(blk)
+            if firstBlk then
+                local headEnd, bodyStart = assert(blk:find("\r\n\r\n"))
+                local head, status = { }, "200 OK"
+                for l in blk:sub(1, headEnd - 1):gmatch("([^\r\n]+)") do
+                    local k, v = l:match("^([%a%d%-_]+): ?(.+)$")
+                    if k == "Status" then status = v else head[#head + 1] = l end
+                end
+                res:rawWrite(("HTTP/1.1 %s\r\nServer: %s\r\nConnection: close\r\n"):
+                    format(status, HTTP.serverVer))
+                res:rawWrite(tconcat(head, "\r\n") .. "\r\n\r\n")
+                res.headerSent, firstBlk = 0, false
+                if bodyStart >= #blk then return true end
+                blk = blk:sub(bodyStart + 1, -1)
+            end
+            return res:rawWrite(blk)
+        end)
+        res:stop()
+    elseif req.method == "GET" or req.method == "HEAD" then
+        local lastModified = os.date ("!%a, %d %b %Y %H:%M:%S GMT", f_attr.modification)
+        if req.headers["if-modified-since"] == lastModified then
+            res:writeHeader(304, { ["Last-Modified"] = lastModified })
+        elseif req.method == "HEAD" then
+            res:writeHeader(200, {
+                ["Last-Modified"] = lastModified,
+                ["Content-Type"] = HTTP.mimeTypes[suffix],
+                ["Content-Length"] = f_attr.size })
+        else
+            return res:serveFile{
+                vhost.documentRoot .. f_path,
+                lastModified = lastModified,
+                range = req.headers.range,
+                contentType = HTTP.mimeTypes[suffix] }
+        end
+    else return res:displayError(405) end
 end
 
 function HTTP.AcceptWebSocket(req, res)
