@@ -521,7 +521,7 @@ function HTTP.AcceptWebSocket(req, res)
     local wsobj = setmetatable({
         stillAlive = true,
         qdiscTh = coroutine.create(WebSocket.pumpQueue),
-        stream = stream
+        stream = res.stream
     }, MT.WebSocket)
     coroutine.resume(wsobj.qdiscTh, wsobj)
     return wsobj
@@ -659,7 +659,7 @@ function HTTP.ForwardRequest(req, res, addr, port)
         res.connection = "upgrade"
         res:writeHeader(statusCode, headers)
         coroutine.resume(coroutine.create(pumpStream), res.stream, stream)
-        return pumpStream(res.stream, stream)
+        return pumpStream(stream, res.stream)
     else
         res.connection = "close"
         res:writeHeader(statusCode, headers)
