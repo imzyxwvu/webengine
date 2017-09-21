@@ -208,7 +208,7 @@ function WebSocket:ping()
     return self:emitFrame("\x89\0") -- opcode PING
 end
 
-function WebSocket:read(frame)
+function WebSocket:read()
     assert(self.stillAlive, "connection is down")
     local reading_op, chunks
     while true do
@@ -233,6 +233,9 @@ function WebSocket:read(frame)
                 self:close()
                 return nil, "protocol error"
             end
+        elseif frame[1] == 8 then
+            self:close()
+            return nil, "closed"
         elseif frame[1] == 9 then
             -- TODO: handle opcode PING
         elseif frame[1] == 0xa then -- ignore PONG
