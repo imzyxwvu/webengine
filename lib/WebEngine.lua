@@ -667,4 +667,57 @@ function HTTP.ForwardRequest(req, res, addr, port)
     end
 end
 
+function HTTP.Request(addr, port, host, method, resource, postdata, cookie)
+    local co = coroutine.running()
+    local preparedHeaders = { string.format(
+        "%s %s HTTP/1.1\r\nConnection: close\r\nUser-Agent: %s\r\nHost: %s",
+        method, resource, HTTP.serverVer, host or addr) }
+    if postdata then
+        assert(type(postdata) == "string")
+        preparedHeaders[#preparedHeaders + 1] =
+            string.format("Content-Length: %d", #postdata)
+    end
+    if cookie then
+        assert(type(cookie) == "string")
+        preparedHeaders[#preparedHeaders + 1] =
+            string.format("Cookie: %s", cookie)
+    end
+    preparedHeaders[#preparedHeaders + 1] = "\r\n"
+    local stream = core.tcp_connect(addr, port or 80, function(...)
+        coroutine.resume(co, ...)
+    end)
+    local err
+    stream, err = coroutine.yield()
+    if not stream then return nil, err end
+    assert(stream:write(table.concat(preparedHeaders, "\r\n")))
+    if postdata then assert(stream:write(req.postData)) end
+    headers, err = stream:read(core.decode_response)
+    if not headers then
+        stream:close()
+        return nil, err
+    end
+    local response = nil
+    local connectionMode = (headers.Connection or "close"):lower()
+    if headers["Content-Length"] then
+        local restLength = tonumber(headers["Content-Length"])
+        response = stream:read(restLength)
+        stream:close()
+    elseif headers["Content-Encoding"] then
+        stream:close()
+        return nil, "encoded response" -- TODO: support chunked encoding
+    else
+        local chunks = {}
+        while true do
+            local chunk = stream:read(core.decode_any)
+            if chunk then
+                chunks[#chunks + 1] = chunk
+            else
+                break
+            end
+        end
+        response = table.concat(chunks)
+    end
+    return headers, response
+end
+
 return HTTP
