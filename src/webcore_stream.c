@@ -671,6 +671,10 @@ static webcore_stream_t *luaxuv_pushstream(lua_State *L, uv_stream_t *handle)
     self->handle = handle;
     self->ref_decoder = LUA_REFNIL;
     self->ref_th = LUA_REFNIL;
+#ifndef NO_SSL
+    self->ref_ssl_ctx = LUA_REFNIL;
+    self->ssl = NULL;
+#endif
     luaL_getmetatable(L, LXUV_MT_STREAM);
     lua_setmetatable(L, -2);
     self->timeout = malloc(sizeof(uv_timer_t));
