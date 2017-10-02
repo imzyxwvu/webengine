@@ -9,8 +9,6 @@ local HTTP = {
     stdErr = io.stderr
 }
 
-local MT = {}
-
 HTTP.mimeTypes = {
     atom = "application/atom+xml",
     hqx = "application/mac-binhex40",
@@ -75,6 +73,8 @@ local statuscodes = {
     [502] = 'Bad Gateway', [503] = 'Service Unavailable',
 }
 
+local MT = { }
+
 local Response = {}
 
 function Response:stop()
@@ -115,7 +115,7 @@ function Response:writeHeader(code, headers)
 end
 
 function Response:handled(resource)
-    return self:headerSent()
+    return self.headerSent
 end
 
 function Response:redirectTo(resource)
@@ -158,7 +158,7 @@ function Response:serveFile(opts)
             self:writeHeader(headers["Content-Range"] and 206 or 200, headers)
             fp:seek("set", from or 0)
         else
-            self:writeHeader(200, headers)
+            self:writeHeader(self.stateCode or 200, headers)
             fp:seek("set", 0)
         end
         while len > 0 do
@@ -445,6 +445,7 @@ function HTTP.HandleRequest(req, res, vhost)
         if vhost.notFoundPage then
             f_path = "/" .. vhost.notFoundPage
             f_attr = assert(core.stat(vhost.documentRoot .. f_path), "404 page not found")
+            res.stateCode = 404
         else
             return res:displayError(404, [[<!DOCTYPE html><html>
 <head><title>HTTP Error 404</title></head><body><h1>404 Not Found</h1><p>The page you are requesting is non-existent.</p></body></html>]])
@@ -480,6 +481,10 @@ function HTTP.HandleRequest(req, res, vhost)
             return res:rawWrite(blk)
         end)
         res:stop()
+    elseif res.stateCode == 404 and req.method ~= "HEAD" then
+        return res:serveFile{
+            vhost.documentRoot .. f_path,
+            contentType = HTTP.mimeTypes[suffix] }
     elseif req.method == "GET" or req.method == "HEAD" then
         local lastModified = os.date ("!%a, %d %b %Y %H:%M:%S GMT", f_attr.modification)
         if req.headers["if-modified-since"] == lastModified then
