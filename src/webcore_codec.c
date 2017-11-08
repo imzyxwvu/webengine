@@ -187,7 +187,7 @@ static int lrc4_proceed(lua_State *L)
         j = rc4->S[rc4->i]; rc4->S[rc4->i] = rc4->S[rc4->j]; rc4->S[rc4->j] = j;
         output[i] = input[i] ^ rc4->S[(rc4->S[rc4->i] + rc4->S[rc4->j]) % 256];
     }
-    lua_pushlstring(L, output, len);
+    lua_pushlstring(L, (const char *)output, len);
     free(output);
     return 1;
 }
@@ -559,16 +559,16 @@ static int l_sha1(lua_State *L) {
     c.state[3] = 0x10325476;
     c.state[4] = 0xC3D2E1F0;
     c.count[0] = c.count[1] = 0;
-    SHA1Update(&c, msg, msglen);
+    SHA1Update(&c, (const unsigned char *)msg, msglen);
     SHA1Final(m, &c);
-    lua_pushlstring(L, m, sizeof(m));
+    lua_pushlstring(L, (const char *)m, sizeof(m));
     return 1;
 }
 
 static int l_md5(lua_State *L) {
     size_t msglen;
     const char *msg = luaL_checklstring(L, 1, &msglen);
-    unsigned char m[16];
+    char m[16];
     md5(msg, msglen, m);
     lua_pushlstring(L, m, 16);
     return 1;

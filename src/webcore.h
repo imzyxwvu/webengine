@@ -16,7 +16,8 @@ void stb_pull(streambuffer_t *sb, int nb);
 streambuffer_t *stb_retain(streambuffer_t *sb);
 void stb_unref(streambuffer_t *sb);
 
-#define LXUV_MT_STBUF "WebCore UV StreamBuffer"
+#define LXUV_MT_STBUF  "WebCore StreamBuffer"
+#define LXUV_MT_STREAM "WebCore Stream"
 
 #define LXUV_RETAIN(L, i) \
     (lua_pushvalue(L, i), luaL_ref(L, LUA_REGISTRYINDEX));

@@ -80,7 +80,7 @@ static int l_stb__len(lua_State *L) {
 
 static int l_stb__tostring(lua_State *L) {
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
-    lua_pushlstring(L, ref->sb->data, ref->sb->length);
+    lua_pushlstring(L, (const char *)ref->sb->data, ref->sb->length);
     return 1;
 }
 
@@ -132,7 +132,6 @@ int l_pipe_connect(lua_State *L);
 static luaxuv_handle* luaxuv_newuvobj(lua_State *L, uv_handle_t *handle, const char *tn)
 {
     luaxuv_handle *obj = lua_newuserdata(L, sizeof(luaxuv_handle));
-    register int i;
     obj->data = handle;
     obj->tname = tn;
     obj->cbref = obj->cbself = LUA_REFNIL;
@@ -364,7 +363,7 @@ static int l_listen(lua_State *L)
        uv_ip6_addr(ip, port, (struct sockaddr_in6*)&addr))
         return luaL_error(L, "invalid IP address or port");
     luaL_checktype(L, 4, LUA_TFUNCTION);
-    if(stream = malloc(sizeof(*stream))) {
+    if((stream = malloc(sizeof(*stream)))) {
         r = uv_tcp_init(uv_default_loop(), stream);
         if(r < 0) {
             free(stream);
@@ -600,11 +599,11 @@ static int l_stop(lua_State *L)
 static int l_decode_request(lua_State *L)
 {
     const char *chunk;
-    int i = 0, currentExpect = 0, currentBase;
-    int verbOrKeyLength;
+    int i = 0, currentExpect = 0, currentBase = 0;
+    int verbOrKeyLength = 0;
     char headerKey[32];
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
-    chunk = ref->sb->data;
+    chunk = (const char *)ref->sb->data;
     if(ref->sb->length > 0x10000)
         return luaL_error(L, "request too long");
     while(i < ref->sb->length) {
@@ -725,10 +724,10 @@ entire_request_decoded:
 static int l_decode_response(lua_State *L)
 {
     const char *chunk;
-    int i = 0, currentExpect = 0, currentBase = 0, keyLength;
+    int i = 0, currentExpect = 0, currentBase = 0, keyLength = 0;
     char headerKey[32];
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
-    chunk = ref->sb->data;
+    chunk = (const char *)ref->sb->data;
     if(ref->sb->length > 0x10000)
         return luaL_error(L, "response too long");
     while(i < ref->sb->length) {
@@ -871,7 +870,7 @@ static int l_decode_fcgi(lua_State *L)
     lua_createtable(L, 2, 0);
     lua_pushinteger(L, data[1]);
     lua_rawseti(L, -2, 1);
-    lua_pushlstring(L, ref->sb->data + 8, payload_length);
+    lua_pushlstring(L, (const char *)ref->sb->data + 8, payload_length);
     lua_rawseti(L, -2, 2);
     stb_pull(ref->sb, entire_length);
     return 1;
@@ -889,7 +888,7 @@ static int l_decode_wsframe(lua_State *L)
         return lua_pushnil(L), 0;
     opcode_and_fin = frame[0];
     payload_length = frame[1] & 0x7f;
-    if(masked = frame[1] & 0x80) expected_length += 4;
+    if((masked = frame[1] & 0x80)) expected_length += 4;
     frame += 2;
     if(payload_length == 127) {
         expected_length += 8;
@@ -921,7 +920,7 @@ static int l_decode_wsframe(lua_State *L)
     lua_pushinteger(L, opcode_and_fin & 0xf);
     lua_rawseti(L, -2, 1);
     if(payload_length > 0) {
-        lua_pushlstring(L, frame, payload_length);
+        lua_pushlstring(L, (const char *)frame, payload_length);
         lua_rawseti(L, -2, 2);
     }
     lua_pushboolean(L, opcode_and_fin & 0x80);
@@ -966,7 +965,7 @@ static int l_check_tls(lua_State *L)
 static int l_decode_any(lua_State *L)
 {
     streambuffer_ref_t *ref = luaL_checkudata(L, 1, LXUV_MT_STBUF);
-    lua_pushlstring(L, ref->sb->data, ref->sb->length);
+    lua_pushlstring(L, (const char *)ref->sb->data, ref->sb->length);
     stb_pull(ref->sb, ref->sb->length);
     return 1;
 }
@@ -975,7 +974,7 @@ static int l_encode_fcgi(lua_State *L)
 {
     int optype = luaL_checkinteger(L, 1);
     size_t length = 0;
-    const char *payload;
+    const char *payload = NULL;
     streambuffer_t *stb;
     unsigned char *buffer;
     if(!lua_isnoneornil(L, 2))
