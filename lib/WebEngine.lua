@@ -633,8 +633,8 @@ function HTTP.ForwardRequest(req, res, addr, port)
     end
     preparedHeaders[#preparedHeaders + 1] = "\r\n"
     assert(stream:write(table.concat(preparedHeaders, "\r\n")))
-    if headers["content-length"] and req.postData then
-        assert(stream:write(req.postData))
+    if headers["content-length"] and req.post then
+        assert(stream:write(req.post))
     end
     headers = stream:read(core.decode_response)
     if not headers then
@@ -695,7 +695,7 @@ function HTTP.Request(addr, port, host, method, resource, postdata, cookie)
     stream, err = coroutine.yield()
     if not stream then return nil, err end
     assert(stream:write(table.concat(preparedHeaders, "\r\n")))
-    if postdata then assert(stream:write(req.postData)) end
+    if postdata then assert(stream:write(postdata)) end
     headers, err = stream:read(core.decode_response)
     if not headers then
         stream:close()
