@@ -128,6 +128,7 @@ void luaxuv_pushaddr(lua_State* L, struct sockaddr_storage* address, int addrlen
 
 int l_tcp_connect(lua_State *L);
 int l_pipe_connect(lua_State *L);
+int l_pipe_open(lua_State *L);
 
 static luaxuv_handle* luaxuv_newuvobj(lua_State *L, uv_handle_t *handle, const char *tn)
 {
@@ -1071,6 +1072,7 @@ static luaL_Reg lreg_main[] = {
     { "connect", l_tcp_connect },
     { "tcp_connect", l_tcp_connect },
     { "pipe_connect", l_pipe_connect },
+    { "pipe_open", l_pipe_open },
     { "listen", l_listen },
     { "run", l_run },
     { "run_nowait", l_run_nowait },

@@ -754,6 +754,36 @@ int l_pipe_connect(lua_State *L)
     }
 }
 
+int l_pipe_open(lua_State *L)
+{
+    int fd = luaL_checkinteger(L, 1);
+    uv_pipe_t *stream;
+    int r;
+
+    if(stream = malloc(sizeof(*stream))) {
+        r = uv_pipe_init(uv_default_loop(), stream, 0);
+        if(r < 0) {
+            free(stream);
+            lua_pushstring(L, uv_strerror(r));
+            return lua_error(L);
+        }
+    } else return luaL_error(L, "can't allocate memory");
+    {
+        webcore_stream_t *self = luaxuv_pushstream(L, (uv_stream_t *)stream);
+        r = uv_pipe_open(stream, fd);
+        if(r < 0) {
+            webcore_stream_close(L, self, NULL);
+            lua_pushstring(L, uv_strerror(r));
+            return lua_error(L);
+        }
+        if(NULL == (self->sb = stb_alloc())) {
+            webcore_stream_close(L, self, NULL);
+            return luaL_error(L, "failed to allocate StreamBuffer");
+        }
+        return 1;
+    }
+}
+
 void webcore_init_stream(uv_stream_t* stream, int cbref)
 {
     webcore_stream_t *client;
