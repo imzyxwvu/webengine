@@ -23,6 +23,8 @@ typedef struct {
 
 #define LXUV_MT_HANDLE "WebCore UV Handle"
 
+void webcore_resume_lua_thread(lua_State *th, int narg);
+
 streambuffer_t *stb_alloc() {
     streambuffer_t *sb = malloc(sizeof(streambuffer_t));
     if(sb) {
@@ -429,6 +431,46 @@ static int luaxuv_timer_start(lua_State *L)
     }
     obj->cbref = LXUV_RETAIN(L, 1);
     obj->cbself = LXUV_RETAIN(L, -1);
+    return 1;
+}
+
+static void webcore_on_timeout(uv_timer_t* handle) {
+    lua_rawgeti(L_Main, LUA_REGISTRYINDEX, (lua_Integer)handle->data);
+    uv_close((uv_handle_t *)handle, (uv_close_cb)free);
+    webcore_resume_lua_thread(lua_tothread(L_Main, -1), 0);
+    lua_pop(L_Main, 1);
+}
+
+static int l_usleep(lua_State *L)
+{
+    int timeout = luaL_checkint(L, 1), r;
+    uv_timer_t *handle = malloc(sizeof(uv_timer_t));
+    if((r = uv_timer_init(uv_default_loop(), handle)) < 0) {
+        free(handle);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    r = uv_timer_start(handle, webcore_on_timeout, timeout, 0);
+    if(r < 0) {
+        uv_close((uv_handle_t *)handle, (uv_close_cb)free);
+        lua_pushstring(L, uv_strerror(r));
+        return lua_error(L);
+    }
+    lua_pushthread(L);
+    handle->data = (void *)(long)LXUV_RETAIN(L, -1);
+    return lua_yield(L, 0);
+}
+
+static int l_start(lua_State *L)
+{
+    lua_State *th;
+    int n = lua_gettop(L), i;
+    luaL_checktype(L, 1, LUA_TFUNCTION);
+    th = lua_newthread(L);
+    for(i = 1; i <= n; i++)
+        lua_pushvalue(L, i);
+    lua_xmove(L, th, n);
+    webcore_resume_lua_thread(th, n - 1);
     return 1;
 }
 
@@ -1089,6 +1131,8 @@ static luaL_Reg lreg_main[] = {
     { "close", luaxuv_close },
     { "kill", l_kill },
     { "uptime", l_uptime },
+    { "usleep", l_usleep },
+    { "start", l_start },
     { "update_time", l_update_time },
     { "get_total_memory", l_get_total_memory },
     { "set_process_title", l_set_process_title },

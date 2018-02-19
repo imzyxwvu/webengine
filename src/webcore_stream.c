@@ -54,7 +54,7 @@ static int l_handle_error(lua_State *L) {
     return 0;
 }
 
-static void resume_lua_thread(lua_State *th, int narg)
+void webcore_resume_lua_thread(lua_State *th, int narg)
 {
     int s = lua_resume(th, narg);
     if(s && s != LUA_YIELD) {
@@ -65,6 +65,8 @@ static void resume_lua_thread(lua_State *th, int narg)
         lua_call(L_Main, 2, 0);
     }
 }
+
+#define resume_lua_thread webcore_resume_lua_thread
 
 static void resume_lua_thread_with_err(lua_State *th, const char *errmsg)
 {
