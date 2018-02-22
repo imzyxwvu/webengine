@@ -447,8 +447,7 @@ function HTTP.HandleRequest(req, res, vhost)
             f_attr = assert(core.stat(vhost.documentRoot .. f_path), "404 page not found")
             res.stateCode = 404
         else
-            return res:displayError(404, [[<!DOCTYPE html><html>
-<head><title>HTTP Error 404</title></head><body><h1>404 Not Found</h1><p>The page you are requesting is non-existent.</p></body></html>]])
+            return
         end
     end
     local suffix = f_path:match("%.([A-Za-z0-9]+)$")
