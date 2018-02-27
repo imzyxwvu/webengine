@@ -672,7 +672,7 @@ function HTTP.ForwardRequest(req, res, addr, port)
     end
 end
 
-function HTTP.Request(addr, port, host, method, resource, postdata, cookie)
+function HTTP.Request(addr, port, host, method, resource, postdata, contentType)
     local co = coroutine.running()
     local preparedHeaders = { string.format(
         "%s %s HTTP/1.1\r\nConnection: close\r\nUser-Agent: %s\r\nHost: %s",
@@ -682,10 +682,10 @@ function HTTP.Request(addr, port, host, method, resource, postdata, cookie)
         preparedHeaders[#preparedHeaders + 1] =
             string.format("Content-Length: %d", #postdata)
     end
-    if cookie then
-        assert(type(cookie) == "string")
+    if contentType then
+        assert(type(contentType) == "string")
         preparedHeaders[#preparedHeaders + 1] =
-            string.format("Cookie: %s", cookie)
+            string.format("Content-Type: %s", contentType)
     end
     preparedHeaders[#preparedHeaders + 1] = "\r\n"
     local stream = core.tcp_connect(addr, port or 80, function(...)
