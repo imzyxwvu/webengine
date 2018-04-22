@@ -1110,6 +1110,14 @@ static int l_stat(lua_State *L) {
     return 1;
 }
 
+static int l_ignore_signal(lua_State *L) {
+    int signo = luaL_checkinteger (L, 1);
+#ifndef _WIN32
+    signal(signo, SIG_IGN);
+#endif
+    return 0;
+}
+
 static luaL_Reg lreg_main[] = {
     { "connect", l_tcp_connect },
     { "tcp_connect", l_tcp_connect },
@@ -1146,6 +1154,7 @@ static luaL_Reg lreg_main[] = {
     { "dup_stb", l_dup_stb },
     { "check_tls", l_check_tls },
     { "stat", l_stat },
+    { "ignore_signal", l_ignore_signal },
     { NULL, NULL }
 };
 

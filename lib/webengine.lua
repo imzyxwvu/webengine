@@ -725,4 +725,6 @@ function HTTP.Request(addr, port, host, method, resource, postdata, contentType)
     return headers, response
 end
 
+core.ignore_signal(13) -- ignore SIGPIPE
+
 return HTTP
